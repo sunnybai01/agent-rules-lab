@@ -77,11 +77,16 @@ function buildWorkspace() {
 }
 
 // ---------- 2. Agent ----------
+// Drop the variables of a parent Claude Code session (desktop app, IDE) so that the run is a
+// plain CLI session. Keep the credentials a person sets on purpose.
+const KEEP = new Set(["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"]);
 function cleanEnv() {
   const env = { ...process.env };
   for (const key of Object.keys(env)) {
-    if (key === "CLAUDECODE" || key.startsWith("CLAUDE_CODE_") || key === "CLAUDE_AGENT_SDK_VERSION") delete env[key];
+    if (KEEP.has(key)) continue;
+    if (key === "CLAUDECODE" || key.startsWith("CLAUDE_CODE_") || key.startsWith("CLAUDE_AGENT_SDK")) delete env[key];
   }
+  if (!process.env.LAB_KEEP_BASE_URL) delete env.ANTHROPIC_BASE_URL;
   return env;
 }
 

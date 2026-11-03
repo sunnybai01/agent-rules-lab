@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Runs the matrix of one experiment. Resumable: a run with a result is skipped.
 //   node harness/batch.mjs E1 [--best c] [--parallel 2] [--model <id>] [--dry-run]
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -38,6 +38,21 @@ console.log(`${name}: ${runs.length} runs to do`);
 if (opts["dry-run"]) {
   for (const r of runs) console.log(r);
   process.exit(0);
+}
+
+// Preflight: the CLI must be signed in, or a token or API key must be set.
+if (!process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
+  const env = { ...process.env };
+  for (const key of Object.keys(env)) if (key === "CLAUDECODE" || key.startsWith("CLAUDE_CODE_")) delete env[key];
+  delete env.ANTHROPIC_BASE_URL;
+  let status = {};
+  try {
+    status = JSON.parse(execFileSync("claude", ["auth", "status"], { env, encoding: "utf8" }));
+  } catch {}
+  if (!status.loggedIn) {
+    console.error("The claude CLI is not signed in. Run `claude auth login`, or set CLAUDE_CODE_OAUTH_TOKEN (`claude setup-token`) or ANTHROPIC_API_KEY.");
+    process.exit(1);
+  }
 }
 
 const queue = [...runs];
