@@ -1,0 +1,11 @@
+{
+  "name": "@provital/erp-fake",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@provital/erp-port": "workspace:*"
+  }
+}

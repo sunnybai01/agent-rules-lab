@@ -1,0 +1,9 @@
+{
+  "id": "T4",
+  "title": "Write the ADR for personal data metadata",
+  "rule": "ADR quality, valid Discovery IDs",
+  "prompt": "Write the ADR that decides how a table column carries its personal data metadata and how CI checks it (open decision TD-09 in docs/technical-decisions.md). The code already uses `withDataMeta` in `packages/core/src/kernel/data-meta.ts` and the check in `tools/pii-check`. Record the decision as it is built, with the options that were considered. Set the status to Proposed.",
+  "requiredAc": [],
+  "budgetUsd": 3,
+  "skipCheck": false
+}

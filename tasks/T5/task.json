@@ -1,0 +1,8 @@
+{
+  "id": "T5",
+  "title": "Fix the business-date bug",
+  "rule": "Locate a planted bug; Europe/Berlin calendar",
+  "prompt": "Bug report from support: an advisor created a task at 00:30 at night on 1 March 2027 (German time). The task shows 28 February 2027 as its due date. Find the cause and fix it.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 3
+}

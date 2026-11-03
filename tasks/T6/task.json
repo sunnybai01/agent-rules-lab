@@ -1,0 +1,9 @@
+{
+  "id": "T6",
+  "title": "Record a consent for a person (T3-AC-004)",
+  "rule": "AC traceability, full flow",
+  "storyKey": "AN-900",
+  "prompt": "Implement this Jira story.\n\n**AN-900: Record a consent for a person (T3-AC-004)**\n\n## Context\nThe platform records the consents of a person, for example for marketing e-mails. Head office must prove each consent (T4 privacy controls).\n\n## Scope\n- Included: record a consent decision, read the current decision per purpose, read the history.\n- Not included: the consent screens, the e-mail marketing tool interface, the migration of old consents.\n\n## Acceptance criteria\n- T3-AC-004: A consent record stores the person, the purpose, the version of the consent text, the channel (`web`, `advisor` or `import`), the decision (given or withdrawn) and the time of the decision. Records are never changed or deleted; a new decision adds a record.\n\n## API\n- `app.identity.recordConsent({ personId, purpose, textVersion, channel, granted })` returns the record. It fails for an unknown person.\n- `app.identity.currentConsent(personId, purpose)` returns the latest record or `null`.\n- `app.identity.consentHistory(personId)` returns all records, oldest first.\n- Other modules must learn about each change of a consent.\n\n## Sources\n- T3-AC-004, T3-D-009, architecture section 4 (`identity` owns consents).\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": ["T3-AC-004"],
+  "budgetUsd": 6
+}

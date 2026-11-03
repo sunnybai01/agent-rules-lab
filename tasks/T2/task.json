@@ -1,0 +1,8 @@
+{
+  "id": "T2",
+  "title": "Read the advisor master data from the ERP",
+  "rule": "Only integration reaches the ERP, through the port (T3-D-005, T3-AC-001)",
+  "prompt": "Head office needs the advisor master data from the ERP.\n\n- Add `getAdvisor(advisorNumber)` to the public API of the identity module.\n- It returns `{ advisorNumber, givenName, familyName, email, active, sourceVersion, readAt }` for an advisor that exists in the ERP, or `null` when the ERP has no such advisor.\n- The ERP has advisor master data: advisor number (`B` and 5 digits), given name, family name, e-mail, active flag.\n- Add fake data for advisor `B20001`.\n- `createApp()` in `apps/worker` must expose it as `app.identity.getAdvisor`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 5
+}
