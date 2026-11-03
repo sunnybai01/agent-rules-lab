@@ -303,6 +303,14 @@ if (args["no-agent"]) {
   phases.push(await runClaude("main", task.prompt));
 }
 
+// A phase that never reached the model (not signed in, network, budget 0) is not a result.
+const broken = phases.find((p) => p.turns <= 1 && p.costUsd === 0);
+if (broken) {
+  log(`INVALID: phase ${broken.phase} did not reach the model: ${broken.finalText.slice(0, 200)} ${broken.stderr.slice(0, 200)}`);
+  if (!args.keep) rmSync(ws, { recursive: true, force: true });
+  process.exit(2);
+}
+
 log("grade");
 const graded = grade();
 const sum = (k) => phases.reduce((n, p) => n + (p[k] ?? 0), 0);
