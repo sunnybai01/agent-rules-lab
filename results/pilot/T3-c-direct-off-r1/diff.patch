@@ -1,0 +1,239 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..f064f37 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -25,6 +25,7 @@ export function createApp(options: AppOptions = {}) {
+     bus,
+     clock,
+   });
++  journey.registerJourneySubscriptions(bus, { journey: journeyApi });
+   return { bus, clock, integration: integrationApi, identity: identityApi, journey: journeyApi };
+ }
+ 
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..dde6f1a 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -1,3 +1,4 @@
++import { kernel } from "@provital/core";
+ import { describe, expect, it } from "vitest";
+ import { createApp } from "./index";
+ 
+@@ -11,4 +12,21 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("creates a welcome call task for a new person", async () => {
++    const app = createApp({ clock: kernel.fixedClock("2027-01-04T23:30:00Z") });
++    const person = await app.identity.registerPerson({
++      email: "welcome@example.test",
++      givenName: "Wanda",
++      familyName: "Test",
++    });
++    const tasks = await app.journey.listTasks(person.id);
++    expect(tasks).toHaveLength(1);
++    expect(tasks[0]).toMatchObject({
++      personId: person.id,
++      kind: "welcome-call",
++      title: "Welcome call",
++      dueDate: "2027-01-05",
++    });
++  });
+ });
+diff --git a/packages/core/src/identity/AGENTS.md b/packages/core/src/identity/AGENTS.md
+index 524401b..2b9df0c 100644
+--- a/packages/core/src/identity/AGENTS.md
++++ b/packages/core/src/identity/AGENTS.md
+@@ -24,7 +24,7 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ | Event | Direction | Payload |
+ |---|---|---|
+-| `identity.person-registered` | Emits | `personId`, `brand` |
++| `identity.person-registered` | Emits | `personId`, `brand`. Consumed by `journey` (welcome call task) |
+ 
+ ## Invariants
+ 
+diff --git a/packages/core/src/journey/AGENTS.md b/packages/core/src/journey/AGENTS.md
+index fdc3bf2..394b63e 100644
+--- a/packages/core/src/journey/AGENTS.md
++++ b/packages/core/src/journey/AGENTS.md
+@@ -12,6 +12,8 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ | `.createTask({ personId, kind, title, dueDate? })` | Creates a task. `dueDate` defaults to today's business date |
+ | `.listTasks(personId)` | Lists the tasks of a person |
+ | `InMemoryTaskRepository` | Store for tests and the fixture |
++| `registerJourneySubscriptions(bus, { journey })` | Subscribes the handlers of `subscriptions.ts`. The composition root calls it |
++| `WELCOME_CALL_KIND` | `"welcome-call"`, the kind of the welcome call task |
+ 
+ ## Tables (`schema.ts`)
+ 
+@@ -21,8 +23,14 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ 
+ ## Events
+ 
+-None yet. Journey reacts to events of other modules; register the handlers in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++Journey reacts to events of other modules; register the handlers in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++
++| Event | Direction | Reaction |
++|---|---|---|
++| `identity.person-registered` | Consumes | Creates a task `welcome-call`, title `Welcome call`, due on the business date of `occurredAt` |
+ 
+ ## Invariants
+ 
+ - A task never copies personal data from `identity`. It stores the `personId`.
++- A person has at most one `welcome-call` task. A second delivery of `identity.person-registered` creates no task.
++- The welcome call is due on the `Europe/Berlin` date of the registration, not of the handling.
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..e762a13 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,6 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+ export { createJourney } from "./service";
++export type { JourneySubscriptionDeps } from "./subscriptions";
++export { registerJourneySubscriptions, WELCOME_CALL_KIND } from "./subscriptions";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/subscriptions.test.ts b/packages/core/src/journey/subscriptions.test.ts
+new file mode 100644
+index 0000000..decfdc2
+--- /dev/null
++++ b/packages/core/src/journey/subscriptions.test.ts
+@@ -0,0 +1,55 @@
++import { describe, expect, it } from "vitest";
++import type { PersonRegistered } from "../identity";
++import { fixedClock, InMemoryEventBus } from "../kernel";
++import { createJourney, InMemoryTaskRepository, registerJourneySubscriptions } from "./index";
++
++function personRegistered(occurredAt: string): PersonRegistered {
++  return {
++    type: "identity.person-registered",
++    id: "e1",
++    occurredAt,
++    payload: { personId: "p1", brand: "provital" },
++  };
++}
++
++function setup(now: string) {
++  const bus = new InMemoryEventBus();
++  const journey = createJourney({
++    repo: new InMemoryTaskRepository(),
++    bus,
++    clock: fixedClock(now),
++  });
++  registerJourneySubscriptions(bus, { journey });
++  return { bus, journey };
++}
++
++describe("journey subscriptions", () => {
++  it("creates a welcome call task when a person registers", async () => {
++    const { bus, journey } = setup("2027-01-05T08:00:00Z");
++    await bus.publish(personRegistered("2027-01-05T08:00:00Z"));
++    const tasks = await journey.listTasks("p1");
++    expect(tasks).toHaveLength(1);
++    expect(tasks[0]).toMatchObject({
++      personId: "p1",
++      kind: "welcome-call",
++      title: "Welcome call",
++      dueDate: "2027-01-05",
++    });
++  });
++
++  it("is due on the Berlin business date of the registration, not of the handling", async () => {
++    // Registered at 00:30 Berlin time on 5 January; the handler runs a day later.
++    const { bus, journey } = setup("2027-01-06T10:00:00Z");
++    await bus.publish(personRegistered("2027-01-04T23:30:00Z"));
++    const [task] = await journey.listTasks("p1");
++    expect(task?.dueDate).toBe("2027-01-05");
++  });
++
++  it("creates one task when the event is delivered twice", async () => {
++    const { bus, journey } = setup("2027-01-05T08:00:00Z");
++    const event = personRegistered("2027-01-05T08:00:00Z");
++    await bus.publish(event);
++    await bus.publish(event);
++    expect(await journey.listTasks("p1")).toHaveLength(1);
++  });
++});
+diff --git a/packages/core/src/journey/subscriptions.ts b/packages/core/src/journey/subscriptions.ts
+new file mode 100644
+index 0000000..a06f46d
+--- /dev/null
++++ b/packages/core/src/journey/subscriptions.ts
+@@ -0,0 +1,24 @@
++import type { PersonRegistered } from "../identity";
++import { businessDate, type EventBus } from "../kernel";
++import type { Journey } from "./service";
++
++export const WELCOME_CALL_KIND = "welcome-call";
++
++export interface JourneySubscriptionDeps {
++  journey: Journey;
++}
++
++export function registerJourneySubscriptions(bus: EventBus, { journey }: JourneySubscriptionDeps) {
++  /** The advisor calls each new person. Due on the business date of the registration. */
++  bus.subscribe<PersonRegistered>("identity.person-registered", async (event) => {
++    const { personId } = event.payload;
++    const tasks = await journey.listTasks(personId);
++    if (tasks.some((t) => t.kind === WELCOME_CALL_KIND)) return;
++    await journey.createTask({
++      personId,
++      kind: WELCOME_CALL_KIND,
++      title: "Welcome call",
++      dueDate: businessDate(new Date(event.occurredAt)),
++    });
++  });
++}
+diff --git a/packages/core/src/kernel/kernel.test.ts b/packages/core/src/kernel/kernel.test.ts
+index 1d628c1..75e3e30 100644
+--- a/packages/core/src/kernel/kernel.test.ts
++++ b/packages/core/src/kernel/kernel.test.ts
+@@ -20,6 +20,23 @@ describe("businessDate", () => {
+   it("returns the Berlin date at midday", () => {
+     expect(businessDate(new Date("2027-03-01T11:00:00Z"))).toBe("2027-03-01");
+   });
++
++  it("returns the next Berlin date after Berlin midnight in winter (UTC+1)", () => {
++    expect(businessDate(new Date("2027-01-04T22:59:59Z"))).toBe("2027-01-04");
++    expect(businessDate(new Date("2027-01-04T23:00:00Z"))).toBe("2027-01-05");
++  });
++
++  it("returns the next Berlin date after Berlin midnight in summer (UTC+2)", () => {
++    expect(businessDate(new Date("2027-07-01T21:59:59Z"))).toBe("2027-07-01");
++    expect(businessDate(new Date("2027-07-01T22:00:00Z"))).toBe("2027-07-02");
++  });
++
++  it("follows the daylight saving time changes", () => {
++    // 28 March 2027: clocks go from 02:00 to 03:00. 27 March 23:30 UTC is 28 March 00:30 Berlin.
++    expect(businessDate(new Date("2027-03-27T23:30:00Z"))).toBe("2027-03-28");
++    // 31 October 2027: clocks go from 03:00 back to 02:00. 30 October 22:30 UTC is 31 October 00:30 Berlin.
++    expect(businessDate(new Date("2027-10-30T22:30:00Z"))).toBe("2027-10-31");
++  });
+ });
+ 
+ describe("ids", () => {
+diff --git a/packages/core/src/kernel/time.ts b/packages/core/src/kernel/time.ts
+index 1e6f87f..244f41b 100644
+--- a/packages/core/src/kernel/time.ts
++++ b/packages/core/src/kernel/time.ts
+@@ -11,10 +11,18 @@ export function fixedClock(iso: string): Clock {
+   return { now: () => new Date(instant) };
+ }
+ 
++// The en-CA locale formats a date as YYYY-MM-DD.
++const businessDateFormat = new Intl.DateTimeFormat("en-CA", {
++  timeZone: BUSINESS_TIME_ZONE,
++  year: "numeric",
++  month: "2-digit",
++  day: "2-digit",
++});
++
+ /**
+  * The business date of an instant, as YYYY-MM-DD.
+  * Business rules use the Europe/Berlin calendar (Discovery #102).
+  */
+ export function businessDate(instant: Date): string {
+-  return instant.toISOString().slice(0, 10);
++  return businessDateFormat.format(instant);
+ }

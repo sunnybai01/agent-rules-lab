@@ -11,6 +11,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -49,7 +50,7 @@ if (existsSync(join(outDir, "result.json")) && !args.force) {
 }
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
-const ws = join(tmpdir(), "agentic-lab", runId);
+const ws = join(realpathSync(tmpdir()), "agentic-lab", runId);
 const log = (msg) => {
   console.log(`[${runId}] ${msg}`);
   appendFileSync(join(outDir, "run.log"), `${new Date().toISOString()} ${msg}\n`);
@@ -71,6 +72,9 @@ function buildWorkspace() {
     appendFileSync(join(ws, "AGENTS.md"), readFileSync(join(LAB, "variants/workflow/AGENTS.append.md"), "utf8"));
   }
   if (args.feedback === "on") cpSync(join(LAB, "variants/feedback"), ws, { recursive: true });
+  // Task setup: files that put the workspace in the start state of one task (for example T5's bug).
+  const setup = join(LAB, "tasks", args.task, "setup");
+  if (existsSync(setup)) cpSync(setup, ws, { recursive: true });
   const sh = (cmd) => execSync(cmd, { cwd: ws, stdio: "pipe", encoding: "utf8" });
   sh("pnpm install --offline --frozen-lockfile");
   sh("git init -q -b main && git add -A && git -c user.name=lab -c user.email=lab@example.test commit -qm baseline && git tag baseline");
