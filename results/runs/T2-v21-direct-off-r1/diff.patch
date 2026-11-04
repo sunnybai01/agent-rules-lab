@@ -1,0 +1,533 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..9697377 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -18,6 +18,7 @@ export function createApp(options: AppOptions = {}) {
+   const identityApi = identity.createIdentity({
+     repo: new identity.InMemoryPersonRepository(),
+     bus,
++    integration: integrationApi,
+     clock,
+   });
+   const journeyApi = journey.createJourney({
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..b4f854d 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -1,3 +1,4 @@
++import { kernel } from "@provital/core";
+ import { describe, expect, it } from "vitest";
+ import { createApp } from "./index";
+ 
+@@ -11,4 +12,23 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("T3-AC-001: identity reads advisor master data through the integration module", async () => {
++    const app = createApp({ clock: kernel.fixedClock("2027-01-05T08:00:00Z") });
++    expect(await app.identity.getAdvisor("B20001")).toEqual({
++      advisorNumber: "B20001",
++      givenName: "Berta",
++      familyName: "Beraterin",
++      email: "berta.beraterin@example.test",
++      active: true,
++      sourceVersion: "v2",
++      readAt: "2027-01-05T08:00:00.000Z",
++    });
++    expect(await app.identity.getAdvisor("B99999")).toBeNull();
++  });
++
++  it("passes an ERP outage on to the caller of getAdvisor", async () => {
++    const app = createApp({ erp: { unavailable: true } });
++    await expect(app.identity.getAdvisor("B20001")).rejects.toThrow("ERP unavailable");
++  });
+ });
+diff --git a/docs/adr/0017-advisor-master-data-read.md b/docs/adr/0017-advisor-master-data-read.md
+new file mode 100644
+index 0000000..7d15600
+--- /dev/null
++++ b/docs/adr/0017-advisor-master-data-read.md
+@@ -0,0 +1,27 @@
++# ADR-0017: Read advisor master data live from the ERP through `integration`
++
++- **Status:** Proposed
++- **Date:** 2026-11-04
++- **Deciders:** <tech lead>
++- **Sources:** T3-D-005, T3-AC-001, T2-D-009, T3-D-009, [architecture.md](../architecture.md) section 4, [ERP conventions](../conventions/erp.md)
++
++## Context
++
++Head office needs the advisor master data that the ERP leads: advisor number (`B` and 5 digits), given name, family name, e-mail and the active flag. The `identity` module owns the person and its roles (T3-D-009) and, by architecture section 4, reads customer and advisor master data from the ERP through `integration`. The ERP port has no advisor operation yet, and `identity` does not depend on `integration` yet. Every module reaches the ERP only through `integration` (T3-D-005, T3-AC-001). Reads from the ERP record their source and age, as copies do (T2-D-009).
++
++## Options
++
++1. **A new port operation `readAdvisor`, an `Integration.readAdvisor` read, and `identity.getAdvisor` on top.** Good: follows the ERP conventions step by step; `identity` gets a typed read with source version and read time. Bad: adds a dependency `identity` → `integration`.
++2. **Extend `CustomerMasterData` with the advisor fields.** Good: no new operation. Bad: an advisor is not a customer record; mixes two ERP entities and changes an existing contract.
++3. **A read copy of advisors in `erp_copy`, synchronised by a job.** Good: no ERP call per read. Bad: needs a table, a sync and reconciliation before anyone needs them.
++
++## Decision
++
++We choose option 1. The port gets the operation `readAdvisor(advisorNumber): AdvisorMasterData | null` with the Zod payload `{ advisorNumber, givenName, familyName, email, active, sourceVersion }`. `integration` wraps it as `ErpRead<AdvisorMasterData>`. `identity` receives `Pick<Integration, "readAdvisor">` as a dependency and exposes `getAdvisor(advisorNumber)`, which returns `{ advisorNumber, givenName, familyName, email, active, sourceVersion, readAt }` or `null`. The dependency `identity` → `integration` is a read of the public API only; it is the direction architecture section 4 already describes. A read copy (option 3) can come later behind the same `integration` function.
++
++## Consequences
++
++- Head office code reads an advisor with one call, with the source version and read time.
++- Every adapter (`erp-fake` now, `erp-nav`, `erp-bc` later) must implement `readAdvisor`.
++- The read is live: when the ERP is down, `getAdvisor` throws `ErpUnavailableError`. The caller decides the fallback.
++- `integration` must never depend on `identity`; `pnpm arch` (no module cycles) enforces it. Writes from `identity` to the ERP still go through events.
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 042774e..4c028c3 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -4,7 +4,7 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ 
+ ## How to write an ADR
+ 
+-1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0017.** Then change this line.
++1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0018.** Then change this line.
+ 2. Numbers 0001 to 0014 are reserved for the ADRs under review (technical-decisions.md section 4). Do not use them for a new ADR.
+ 3. Fill every section. Cite Discovery IDs that `pnpm ids show` knows, and TD numbers. At most 80 lines.
+ 4. Set the status to `Proposed`. A second person sets it to `Accepted`. After that, the ADR is not changed: a new ADR supersedes it.
+@@ -17,3 +17,4 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ | 0002–0014 | Under review, not in this repository yet | — |
+ | [0015](0015-ai-development-workflow.md) | AI development workflow | Proposed |
+ | [0016](0016-documentation-architecture.md) | Documentation architecture | Proposed |
++| [0017](0017-advisor-master-data-read.md) | Read advisor master data live from the ERP through `integration` | Proposed |
+diff --git a/docs/specs/draft-advisor-master-data/spec.md b/docs/specs/draft-advisor-master-data/spec.md
+new file mode 100644
+index 0000000..c872b0b
+--- /dev/null
++++ b/docs/specs/draft-advisor-master-data/spec.md
+@@ -0,0 +1,48 @@
++# draft-advisor-master-data: Read advisor master data from the ERP
++
++- **Jira:** none yet (direct request)
++- **Gate:** design (trigger 2: new ERP port operation and payload contract. The dependency `identity` → `integration` is new in code but already in architecture section 4)
++- **Status:** Draft
++- **Approved-by:** <GitHub login> <YYYY-MM-DD>
++- **Baseline:** Discovery v0.1
++- **Module:** identity. Touches: integration (public API `readAdvisor`), `erp-port` (operation `readAdvisor`), `erp-fake` (seed advisor), `apps/worker` (wiring)
++- **ADR:** [ADR-0017](../../adr/0017-advisor-master-data-read.md)
++
++## Context
++
++Head office needs the advisor master data that the ERP leads. The `identity` module exposes it, read through `integration` (T3-D-005).
++
++## Acceptance criteria
++
++The request has no acceptance criterion of its own. The change keeps these:
++
++| ID | Test |
++|---|---|
++| T3-AC-001 | `apps/worker/src/worker.test.ts`, `packages/core/src/identity/identity.test.ts`, `packages/core/src/integration/integration.test.ts` |
++
++## Design increment
++
++- **Module file:** `identity`: `createIdentity({ repo, bus, integration, clock })`; `.getAdvisor(advisorNumber): Promise<Advisor | null>`; type `Advisor`; invariant "advisor master data is read live, not stored, with source version and read time (ADR-0017)". T3-AC-001 stays owned by `integration`; identity's tests cite it because they check the read path. `integration`: `Integration.readAdvisor(advisorNumber): Promise<ErpRead<AdvisorMasterData> | null>`. `erp-port`: `AdvisorMasterData`. `erp-fake`: `fakeAdvisors`.
++- **Contracts:** ERP port operation `readAdvisor(advisorNumber)` → `AdvisorMasterData | null`. Payload `{ advisorNumber: /^B\d{5}$/, givenName, familyName, email (e-mail), active: boolean, sourceVersion }`. No events.
++- **Schema:** none. Nothing is stored.
++
++## Local decisions
++
++- `getAdvisor` returns `{ advisorNumber, givenName, familyName, email, active, sourceVersion, readAt }`: the `ErpRead` envelope flattened, without `source` (always `erp`). As requested.
++- `identity` depends on `Pick<Integration, "readAdvisor">`, not the whole API, so its tests use a small stub and never load an adapter.
++- The read carries `sourceVersion` and `readAt` through the existing `ErpRead<T>` envelope (the pattern of T2-D-009, which itself speaks of basket-line copies).
++- An ERP outage is not caught: `getAdvisor` rejects with `ErpUnavailableError` and the caller decides the fallback ([ERP conventions](../../conventions/erp.md)).
++- No validation of the advisor number format in `identity`; an unknown or malformed number gives `null` from the ERP.
++- Fake advisor `B20001` (Berta Beraterin, `berta.beraterin@example.test`, active, `v2`); it is the advisor of fake customer `K100001`.
++
++## Out of scope
++
++- A read copy of advisors in `erp_copy` and its sync.
++- A link from an advisor to a person record, roles, the advisor structure.
++- A head office screen or HTTP endpoint.
++
++## Open questions
++
++## Deviations
++
++None.
+diff --git a/packages/core/src/identity/AGENTS.md b/packages/core/src/identity/AGENTS.md
+index 9dbad7d..28c1c71 100644
+--- a/packages/core/src/identity/AGENTS.md
++++ b/packages/core/src/identity/AGENTS.md
+@@ -8,9 +8,11 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ | Export | Use |
+ |---|---|
+-| `createIdentity({ repo, bus, clock })` | Builds the module service |
++| `createIdentity({ repo, bus, integration, clock })` | Builds the module service. `integration` is the `integration` module's API (`readAdvisor`) |
+ | `.registerPerson({ email, givenName, familyName, brand? })` | Creates a person. Publishes `identity.person-registered` |
+ | `.getPerson(id)` | Reads a person or `null` |
++| `.getAdvisor(advisorNumber)` | Advisor master data from the ERP as `Advisor`, or `null` when the ERP has no such advisor |
++| `Advisor` | `advisorNumber`, `givenName`, `familyName`, `email`, `active`, `sourceVersion`, `readAt` |
+ | `InMemoryPersonRepository` | Store for tests and the fixture |
+ | `EmailAlreadyRegisteredError` | Thrown when the e-mail exists |
+ | `Identity`, `IdentityDeps`, `RegisterPersonInput` | Types of the service |
+@@ -32,7 +34,8 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ - One person record per e-mail address. The e-mail is stored in lower case (T3-AC-003).
+ - At most one ERP customer number per person (T3-AC-003).
+-- ERP master data comes through the `integration` module, never from the ERP port.
++- ERP master data comes through the `integration` module, never from the ERP port (T3-AC-001).
++- Advisor master data is read live and not stored. It carries its source version and read time (ADR-0017).
+ 
+ ## Acceptance criteria
+ 
+diff --git a/packages/core/src/identity/advisor.ts b/packages/core/src/identity/advisor.ts
+new file mode 100644
+index 0000000..a3cb08d
+--- /dev/null
++++ b/packages/core/src/identity/advisor.ts
+@@ -0,0 +1,12 @@
++/** Advisor master data. The ERP leads it; identity reads it through `integration`. */
++export interface Advisor {
++  /** `B` and 5 digits. */
++  readonly advisorNumber: string;
++  readonly givenName: string;
++  readonly familyName: string;
++  readonly email: string;
++  readonly active: boolean;
++  /** The version of the ERP record and the time of the read (ADR-0017). */
++  readonly sourceVersion: string;
++  readonly readAt: string;
++}
+diff --git a/packages/core/src/identity/identity.test.ts b/packages/core/src/identity/identity.test.ts
+index 097fec0..b14ed59 100644
+--- a/packages/core/src/identity/identity.test.ts
++++ b/packages/core/src/identity/identity.test.ts
+@@ -1,12 +1,34 @@
+ import { describe, expect, it } from "vitest";
++import type { Integration } from "../integration";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+ import { createIdentity, EmailAlreadyRegisteredError, InMemoryPersonRepository } from "./index";
+ 
++/** A stub of the integration API with one invented advisor. */
++const integration: Pick<Integration, "readAdvisor"> = {
++  async readAdvisor(advisorNumber) {
++    if (advisorNumber !== "B20001") return null;
++    return {
++      data: {
++        advisorNumber: "B20001",
++        givenName: "Berta",
++        familyName: "Beraterin",
++        email: "berta.beraterin@example.test",
++        active: true,
++        sourceVersion: "v2",
++      },
++      source: "erp",
++      sourceVersion: "v2",
++      readAt: "2027-01-05T08:00:00.000Z",
++    };
++  },
++};
++
+ function setup() {
+   const bus = new InMemoryEventBus();
+   const identity = createIdentity({
+     repo: new InMemoryPersonRepository(),
+     bus,
++    integration,
+     clock: fixedClock("2027-01-05T08:00:00Z"),
+   });
+   return { bus, identity };
+@@ -38,4 +60,22 @@ describe("identity", () => {
+       payload: { personId: person.id },
+     });
+   });
++
++  it("T3-AC-001: reads advisor master data through the integration API", async () => {
++    const { identity } = setup();
++    expect(await identity.getAdvisor("B20001")).toEqual({
++      advisorNumber: "B20001",
++      givenName: "Berta",
++      familyName: "Beraterin",
++      email: "berta.beraterin@example.test",
++      active: true,
++      sourceVersion: "v2",
++      readAt: "2027-01-05T08:00:00.000Z",
++    });
++  });
++
++  it("returns null for an advisor the ERP does not have", async () => {
++    const { identity } = setup();
++    expect(await identity.getAdvisor("B99999")).toBeNull();
++  });
+ });
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..a0470d9 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,3 +1,4 @@
++export type { Advisor } from "./advisor";
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..7a51c86 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,4 +1,6 @@
++import type { Integration } from "../integration";
+ import { type Clock, type EventBus, newId, systemClock } from "../kernel";
++import type { Advisor } from "./advisor";
+ import type { Person, PersonRegistered, PersonRepository } from "./person";
+ 
+ export interface RegisterPersonInput {
+@@ -18,10 +20,12 @@ export class EmailAlreadyRegisteredError extends Error {
+ export interface IdentityDeps {
+   repo: PersonRepository;
+   bus: EventBus;
++  /** ERP master data comes through the integration module (T3-AC-001). */
++  integration: Pick<Integration, "readAdvisor">;
+   clock?: Clock;
+ }
+ 
+-export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps) {
++export function createIdentity({ repo, bus, integration, clock = systemClock }: IdentityDeps) {
+   return {
+     /** One person record per e-mail address (T3-D-009). */
+     async registerPerson(input: RegisterPersonInput): Promise<Person> {
+@@ -51,6 +55,22 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+     async getPerson(id: string): Promise<Person | null> {
+       return repo.findById(id);
+     },
++
++    /** Advisor master data from the ERP, or null when the ERP has no such advisor. */
++    async getAdvisor(advisorNumber: string): Promise<Advisor | null> {
++      const read = await integration.readAdvisor(advisorNumber);
++      if (!read) return null;
++      const { data } = read;
++      return {
++        advisorNumber: data.advisorNumber,
++        givenName: data.givenName,
++        familyName: data.familyName,
++        email: data.email,
++        active: data.active,
++        sourceVersion: read.sourceVersion,
++        readAt: read.readAt,
++      };
++    },
+   };
+ }
+ 
+diff --git a/packages/core/src/integration/AGENTS.md b/packages/core/src/integration/AGENTS.md
+index 4fd5b06..27f27c5 100644
+--- a/packages/core/src/integration/AGENTS.md
++++ b/packages/core/src/integration/AGENTS.md
+@@ -12,6 +12,7 @@ The outbox, the read copies (`erp_copy`), reconciliation, the message log, the E
+ |---|---|
+ | `createIntegration({ erp, clock })` | Builds the module service. `erp` is an `ErpPort` adapter, injected by the worker |
+ | `Integration.readCustomer(customerNumber)` | Customer master data as `ErpRead<CustomerMasterData>` or `null` |
++| `Integration.readAdvisor(advisorNumber)` | Advisor master data as `ErpRead<AdvisorMasterData>` or `null` |
+ | `Integration`, `IntegrationDeps` | Types of the service |
+ | `ErpRead<T>` | Data plus `source`, `sourceVersion`, `readAt` (T2-D-009) |
+ 
+diff --git a/packages/core/src/integration/index.ts b/packages/core/src/integration/index.ts
+index 701e12f..d253e3d 100644
+--- a/packages/core/src/integration/index.ts
++++ b/packages/core/src/integration/index.ts
+@@ -1,4 +1,4 @@
+-import type { CustomerMasterData, ErpPort } from "@provital/erp-port";
++import type { AdvisorMasterData, CustomerMasterData, ErpPort } from "@provital/erp-port";
+ import type { Clock } from "../kernel";
+ import { systemClock } from "../kernel";
+ 
+@@ -17,6 +17,7 @@ export interface ErpRead<T> {
+ 
+ export interface Integration {
+   readCustomer(customerNumber: string): Promise<ErpRead<CustomerMasterData> | null>;
++  readAdvisor(advisorNumber: string): Promise<ErpRead<AdvisorMasterData> | null>;
+ }
+ 
+ export interface IntegrationDeps {
+@@ -25,16 +26,23 @@ export interface IntegrationDeps {
+ }
+ 
+ export function createIntegration({ erp, clock = systemClock }: IntegrationDeps): Integration {
++  function record<T extends { sourceVersion: string }>(data: T | null): ErpRead<T> | null {
++    if (!data) return null;
++    return {
++      data,
++      source: "erp",
++      sourceVersion: data.sourceVersion,
++      readAt: clock.now().toISOString(),
++    };
++  }
++
+   return {
+     async readCustomer(customerNumber) {
+-      const data = await erp.readCustomer(customerNumber);
+-      if (!data) return null;
+-      return {
+-        data,
+-        source: "erp",
+-        sourceVersion: data.sourceVersion,
+-        readAt: clock.now().toISOString(),
+-      };
++      return record(await erp.readCustomer(customerNumber));
++    },
++
++    async readAdvisor(advisorNumber) {
++      return record(await erp.readAdvisor(advisorNumber));
+     },
+   };
+ }
+diff --git a/packages/core/src/integration/integration.test.ts b/packages/core/src/integration/integration.test.ts
+index f25fb02..48b7272 100644
+--- a/packages/core/src/integration/integration.test.ts
++++ b/packages/core/src/integration/integration.test.ts
+@@ -16,4 +16,23 @@ describe("integration", () => {
+       readAt: "2027-01-05T08:00:00.000Z",
+     });
+   });
++
++  it("T3-AC-001: an advisor read records its source, source version and read time", async () => {
++    const integration = createIntegration({
++      erp: createFakeErp(),
++      clock: fixedClock("2027-01-05T08:00:00Z"),
++    });
++    const read = await integration.readAdvisor("B20001");
++    expect(read).toMatchObject({
++      data: { advisorNumber: "B20001", active: true },
++      source: "erp",
++      sourceVersion: "v2",
++      readAt: "2027-01-05T08:00:00.000Z",
++    });
++  });
++
++  it("returns null for an advisor the ERP does not have", async () => {
++    const integration = createIntegration({ erp: createFakeErp() });
++    expect(await integration.readAdvisor("B99999")).toBeNull();
++  });
+ });
+diff --git a/packages/erp-fake/AGENTS.md b/packages/erp-fake/AGENTS.md
+index c7410bf..141a213 100644
+--- a/packages/erp-fake/AGENTS.md
++++ b/packages/erp-fake/AGENTS.md
+@@ -9,6 +9,7 @@ The fake ERP adapter with synthetic seed data, for development and tests.
+ | `createFakeErp({ unavailable? })` | An `ErpPort` with seed data. With `unavailable: true` every operation throws `ErpUnavailableError` |
+ | `FakeErpOptions` | Options of `createFakeErp` |
+ | `fakeCustomers` | The seed customers |
++| `fakeAdvisors` | The seed advisors (`B20001`) |
+ 
+ ## Rules
+ 
+diff --git a/packages/erp-fake/src/erp-fake.test.ts b/packages/erp-fake/src/erp-fake.test.ts
+index 40b187c..aa9914b 100644
+--- a/packages/erp-fake/src/erp-fake.test.ts
++++ b/packages/erp-fake/src/erp-fake.test.ts
+@@ -1,6 +1,6 @@
+-import { CustomerMasterData } from "@provital/erp-port";
++import { AdvisorMasterData, CustomerMasterData } from "@provital/erp-port";
+ import { describe, expect, it } from "vitest";
+-import { createFakeErp, fakeCustomers } from "./index";
++import { createFakeErp, fakeAdvisors, fakeCustomers } from "./index";
+ 
+ describe("fake ERP", () => {
+   it("returns seeded customers that satisfy the contract", async () => {
+@@ -18,4 +18,19 @@ describe("fake ERP", () => {
+       "ERP unavailable",
+     );
+   });
++
++  it("returns seeded advisors that satisfy the contract", async () => {
++    const advisor = await createFakeErp().readAdvisor("B20001");
++    expect(AdvisorMasterData.parse(advisor)).toEqual(fakeAdvisors[0]);
++  });
++
++  it("returns null for an unknown advisor", async () => {
++    expect(await createFakeErp().readAdvisor("B99999")).toBeNull();
++  });
++
++  it("can simulate an outage of the advisor read", async () => {
++    await expect(createFakeErp({ unavailable: true }).readAdvisor("B20001")).rejects.toThrow(
++      "ERP unavailable",
++    );
++  });
+ });
+diff --git a/packages/erp-fake/src/index.ts b/packages/erp-fake/src/index.ts
+index ae18057..f5c9d59 100644
+--- a/packages/erp-fake/src/index.ts
++++ b/packages/erp-fake/src/index.ts
+@@ -1,4 +1,9 @@
+-import { type CustomerMasterData, type ErpPort, ErpUnavailableError } from "@provital/erp-port";
++import {
++  type AdvisorMasterData,
++  type CustomerMasterData,
++  type ErpPort,
++  ErpUnavailableError,
++} from "@provital/erp-port";
+ 
+ /** Synthetic data only. No personal data of real customers or advisors. */
+ export const fakeCustomers: CustomerMasterData[] = [
+@@ -20,6 +25,17 @@ export const fakeCustomers: CustomerMasterData[] = [
+   },
+ ];
+ 
++export const fakeAdvisors: AdvisorMasterData[] = [
++  {
++    advisorNumber: "B20001",
++    givenName: "Berta",
++    familyName: "Beraterin",
++    email: "berta.beraterin@example.test",
++    active: true,
++    sourceVersion: "v2",
++  },
++];
++
+ export interface FakeErpOptions {
+   /** When true, every operation throws ErpUnavailableError. */
+   unavailable?: boolean;
+@@ -32,5 +48,10 @@ export function createFakeErp(options: FakeErpOptions = {}): ErpPort {
+       const found = fakeCustomers.find((c) => c.customerNumber === customerNumber);
+       return found ? structuredClone(found) : null;
+     },
++    async readAdvisor(advisorNumber) {
++      if (options.unavailable) throw new ErpUnavailableError("readAdvisor");
++      const found = fakeAdvisors.find((a) => a.advisorNumber === advisorNumber);
++      return found ? structuredClone(found) : null;
++    },
+   };
+ }
+diff --git a/packages/erp-port/AGENTS.md b/packages/erp-port/AGENTS.md
+index 00602cd..9607f99 100644
+--- a/packages/erp-port/AGENTS.md
++++ b/packages/erp-port/AGENTS.md
+@@ -8,6 +8,7 @@ The ERP port: operations and payload contracts (Zod). No I/O (ADR-0004, TD-15).
+ |---|---|
+ | `ErpPort` | The operations. One method per operation |
+ | `CustomerMasterData` | Zod schema and type of the customer payload |
++| `AdvisorMasterData` | Zod schema and type of the advisor payload (ADR-0017) |
+ | `ErpUnavailableError` | Thrown by an adapter when the ERP is down |
+ 
+ ## Rules
+diff --git a/packages/erp-port/src/index.ts b/packages/erp-port/src/index.ts
+index 6ae0644..724258d 100644
+--- a/packages/erp-port/src/index.ts
++++ b/packages/erp-port/src/index.ts
+@@ -18,6 +18,16 @@ export const CustomerMasterData = z.object({
+ });
+ export type CustomerMasterData = z.infer<typeof CustomerMasterData>;
+ 
++export const AdvisorMasterData = z.object({
++  advisorNumber: z.string().regex(/^B\d{5}$/),
++  givenName: z.string(),
++  familyName: z.string(),
++  email: z.string().email(),
++  active: z.boolean(),
++  sourceVersion: z.string(),
++});
++export type AdvisorMasterData = z.infer<typeof AdvisorMasterData>;
++
+ export class ErpUnavailableError extends Error {
+   constructor(operation: string) {
+     super(`ERP unavailable: ${operation}`);
+@@ -28,4 +38,6 @@ export class ErpUnavailableError extends Error {
+ export interface ErpPort {
+   /** Returns null when the ERP has no customer with this number. */
+   readCustomer(customerNumber: string): Promise<CustomerMasterData | null>;
++  /** Returns null when the ERP has no advisor with this number. */
++  readAdvisor(advisorNumber: string): Promise<AdvisorMasterData | null>;
+ }

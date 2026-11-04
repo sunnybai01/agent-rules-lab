@@ -1,0 +1,169 @@
+diff --git a/docs/adr/0017-consent-recorded-event.md b/docs/adr/0017-consent-recorded-event.md
+new file mode 100644
+index 0000000..e9e01bb
+--- /dev/null
++++ b/docs/adr/0017-consent-recorded-event.md
+@@ -0,0 +1,26 @@
++# ADR-0017: Event `identity.consent-recorded` for each consent decision
++
++- **Status:** Proposed
++- **Date:** 2026-11-04
++- **Deciders:** <names>
++- **Sources:** T3-AC-004, T3-D-009, architecture section 4, AN-900
++
++## Context
++
++`identity` owns consents (architecture section 4, T3-D-009). A consent record stores the person, the purpose, the text version, the channel, the decision and its time, and records are never changed (T3-AC-004, story AN-900). Other modules must learn about each change of a consent, for example a later sync to the e-mail marketing tool. A module reacts to another module through an event and never calls it to write (event conventions). The event payload holds IDs, not copies of personal data. A consent decision is personal data (data conventions).
++
++## Options
++
++1. **Event with IDs only: `{ consentId, personId, purpose }`.** The subscriber reads the decision with `identity.currentConsent`. Good: follows the event convention; no personal data in the queue or outbox. Bad: one read per event for the subscriber.
++2. **Event with the decision: `{ consentId, personId, purpose, granted, textVersion, channel, decidedAt }`.** Good: the subscriber needs no read. Bad: copies personal data into the bus; an exception to the convention.
++3. **No event; subscribers poll `consentHistory`.** Good: no contract. Bad: polling, delay, and against the event rule.
++
++## Decision
++
++We choose option 1. It follows the event convention, and because records are append-only, `currentConsent` at handling time always gives the newest decision, so a handler that reads it is idempotent and sees no stale state.
++
++## Consequences
++
++- Any module can subscribe to `identity.consent-recorded` without a change to `identity`.
++- A subscriber makes one read per event; the consent volume is small (one record per decision).
++- The event is published once per inserted record, after the insert. A test in `identity/consent.test.ts` checks it; `pnpm docs` checks that the module file lists it.
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 042774e..6b23672 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -4,7 +4,7 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ 
+ ## How to write an ADR
+ 
+-1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0017.** Then change this line.
++1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0018.** Then change this line.
+ 2. Numbers 0001 to 0014 are reserved for the ADRs under review (technical-decisions.md section 4). Do not use them for a new ADR.
+ 3. Fill every section. Cite Discovery IDs that `pnpm ids show` knows, and TD numbers. At most 80 lines.
+ 4. Set the status to `Proposed`. A second person sets it to `Accepted`. After that, the ADR is not changed: a new ADR supersedes it.
+@@ -17,3 +17,4 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ | 0002–0014 | Under review, not in this repository yet | — |
+ | [0015](0015-ai-development-workflow.md) | AI development workflow | Proposed |
+ | [0016](0016-documentation-architecture.md) | Documentation architecture | Proposed |
++| [0017](0017-consent-recorded-event.md) | Event `identity.consent-recorded` for each consent decision | Proposed |
+diff --git a/docs/specs/AN-900/plan.md b/docs/specs/AN-900/plan.md
+new file mode 100644
+index 0000000..2278248
+--- /dev/null
++++ b/docs/specs/AN-900/plan.md
+@@ -0,0 +1,15 @@
++# AN-900: plan
++
++Each step is small and ends with passing tests. Mark a step `[x]` when it is done, in the same commit.
++
++- [ ] 1. ADR-0017 is Accepted and the spec is Approved before step 2 (files: `docs/adr/0017-consent-recorded-event.md`, `docs/adr/README.md`, this spec).
++- [ ] 2. Test `T3-AC-004: records person, purpose, text version, channel, decision and time` and `T3-AC-004: fails for an unknown person` → `ConsentRecord`, `ConsentRepository`, `InMemoryConsentRepository`, `ConsentRecorded` type, `recordConsent`, `PersonNotFoundError`, `InvalidConsentError`; new `consents` dependency (files: `identity/consent.ts`, `identity/consent.test.ts`, `identity/service.ts`, `identity/index.ts`, `apps/worker/src/index.ts`).
++- [ ] 3. Test `T3-AC-004: rejects a channel outside web, advisor, import` and empty purpose or text version → validation in `recordConsent` (files: `identity/consent.test.ts`, `identity/service.ts`).
++- [ ] 4. Test `T3-AC-004: a withdrawal adds a record; earlier records stay unchanged` and `T3-AC-004: currentConsent returns the latest record per purpose, or null` and `T3-AC-004: consentHistory returns all records oldest first` → `currentConsent`, `consentHistory` (files: `identity/consent.test.ts`, `identity/service.ts`, `identity/consent.ts`).
++- [ ] 5. Test `T3-AC-004: publishes identity.consent-recorded once per record` → publish after insert (files: `identity/consent.test.ts`, `identity/service.ts`).
++- [ ] 6. Table `identity.consent` with data metadata and index → `pnpm pii` passes (files: `identity/schema.ts`).
++- [ ] 7. Update `identity/AGENTS.md` (public API, tables, events, invariants). Run `/review`, then `pnpm check`.
++
++## Handoff
++
++Empty while one session works. `/handoff` writes here: the last finished step, the state of the next step, the next command.
+diff --git a/docs/specs/AN-900/spec.md b/docs/specs/AN-900/spec.md
+new file mode 100644
+index 0000000..2e6c3a6
+--- /dev/null
++++ b/docs/specs/AN-900/spec.md
+@@ -0,0 +1,92 @@
++# AN-900: Record a consent for a person
++
++- **Jira:** AN-900
++- **Gate:** design (triggers 2 and 3)
++- **Status:** Approved
++- **Approved-by:** lab-approver 2026-11-04
++- **Baseline:** Discovery v0.1
++- **Module:** identity. Touches: none (other modules can subscribe to the new event `identity.consent-recorded`; no subscriber in this story)
++
++## Context
++
++The platform records the consents of a person, for example for marketing e-mails, and head office must prove each consent (T4 privacy controls). `identity` owns consents (architecture section 4, T3-D-009). This story adds the append-only consent record and its reads.
++
++Gate triggers: 2, a new event `identity.consent-recorded` (ADR-0017); 3, a new table `identity.consent`. Triggers 1 and 4 do not apply (no new module, boundary or dependency). Trigger 5: see open question 1.
++
++## Acceptance criteria
++
++IDs only; `pnpm ids show <ID>` prints the text.
++
++| ID | Test |
++|---|---|
++| T3-AC-004 | `packages/core/src/identity/consent.test.ts` |
++
++## Design increment
++
++- **Module file** (`packages/core/src/identity/AGENTS.md`):
++  - Public API:
++    - `createIdentity({ repo, consents, bus, clock })`: new required dependency `consents: ConsentRepository`.
++    - `.recordConsent({ personId, purpose, textVersion, channel, granted }): Promise<ConsentRecord>`. Adds a record. Publishes `identity.consent-recorded`. Throws `PersonNotFoundError` for an unknown person, `InvalidConsentError` for an empty `purpose` or `textVersion` or a channel outside `web | advisor | import`.
++    - `.currentConsent(personId, purpose): Promise<ConsentRecord | null>`: the latest record of the person for the purpose, or `null`.
++    - `.consentHistory(personId): Promise<ConsentRecord[]>`: all records of the person, oldest first.
++    - New exports: `InMemoryConsentRepository`, `PersonNotFoundError`, `InvalidConsentError`; types `ConsentRecord`, `ConsentRepository`, `ConsentChannel`, `ConsentRecorded`, `RecordConsentInput`.
++  - Invariant: consent records are append-only. `ConsentRepository` has `insert` and reads only; no update, no delete. A withdrawal is a new record with `granted: false` (T3-AC-004).
++  - Invariant: "latest" is the highest `decidedAt`; at the same instant, the later insert (UUIDv7 `id` order).
++  - AC IDs: T3-AC-003, T3-AC-004 (unchanged list; T3-AC-004 now has a test).
++- **Types:**
++
++  ```ts
++  type ConsentChannel = "web" | "advisor" | "import";
++  interface ConsentRecord {
++    readonly id: string;          // UUIDv7
++    readonly personId: string;
++    readonly purpose: string;     // e.g. "marketing-email"
++    readonly textVersion: string; // version of the consent text shown
++    readonly channel: ConsentChannel;
++    readonly granted: boolean;    // true = given, false = withdrawn
++    readonly decidedAt: string;   // ISO UTC, from the clock
++  }
++  ```
++
++- **Contracts:** new event (ADR-0017).
++  - `identity.consent-recorded`, `DomainEvent<"identity.consent-recorded", { consentId, personId, purpose }>`. Published after the insert, once per record. The payload holds IDs and the purpose, not the decision (event conventions: IDs, not copies of personal data). A subscriber reads the decision with `currentConsent(personId, purpose)`. See open question 2.
++- **Schema:** new table `identity.consent`, wrapped in `withDataMeta`.
++
++  | Column | Type | Metadata |
++  |---|---|---|
++  | `id` | `uuid` primary key | `notPersonal` |
++  | `person_id` | `uuid` not null, references `identity.person(id)` | `notPersonal` (same as `person.id`) |
++  | `purpose` | `text` not null | `notPersonal` (a catalogue value) |
++  | `text_version` | `text` not null | `notPersonal` (a catalogue value) |
++  | `channel` | `text` not null | `notPersonal` (`web`, `advisor`, `import`) |
++  | `granted` | `boolean` not null | personal, category `preference`, purpose "Prove the consent decision of the person (T4)", owner `identity`, retention `account lifetime + 3 years` |
++  | `decided_at` | `timestamp with time zone` not null | personal, category `preference`, purpose "Prove when the person decided (T4)", owner `identity`, retention `account lifetime + 3 years` |
++
++  Index on `(person_id, purpose, decided_at)`. No update or delete path in code.
++
++## Local decisions
++
++- Jira "purpose" = register "type"; "channel" = "source"; "time of the decision" = "date"; "decision withdrawn" = "withdrawal". Mapping of names, not a change of the text.
++- `purpose` and `textVersion` are free non-empty strings, not a closed list: the purposes and text versions are content that head office changes without a release (Discovery baseline section 2, settings).
++- The decision time is the clock time of the call. The API has no `decidedAt` input; the migration of old consents (out of scope) will decide whether import needs one.
++- No `brand` column: a consent belongs to a person, and the person carries the brand (T3-D-013).
++- A separate `ConsentRepository` rather than new methods on `PersonRepository`: it has no update or delete, which makes the append-only rule part of the type.
++
++## Out of scope
++
++- The consent screens.
++- The interface to the e-mail marketing tool (Inxmail) and any subscriber of the new event.
++- The migration of old consents with their legal classification (T1).
++- The data-subject request deletion of consent records (T3-C-003).
++
++## Open questions
++
++**Answers of the approver (lab-approver, a person):** for each question, take the option that follows the conventions in `docs/conventions/` and the module files. Where they say nothing, take the option that this spec proposes. Record each answer under "Local decisions" when you implement.
++
++1. **Trigger 5?** The register text of T3-AC-004 says "a consent record shows … its withdrawal". The story models a withdrawal as a new record (`granted: false`) and never changes a record. We read this as a mapping, not a contradiction. The approver confirms, or we write a change record.
++2. **Event payload.** Proposed `{ consentId, personId, purpose }` without `granted`, per the event convention. A subscriber such as the Inxmail sync then calls `currentConsent`. Alternative: add `granted` to the payload, which needs an exception to the convention.
++3. **Data category.** The data categories have no `consent`. Proposed `preference` for `granted` and `decided_at`. A new category `consent` would change the data conventions.
++
++## Deviations
++
++Written during the implementation.

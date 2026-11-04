@@ -1,0 +1,29 @@
+
+===== typecheck: pass =====
+
+===== lint: pass =====
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T3-v21-spec-off-r1
+
+
+ Test Files  9 passed (9)
+      Tests  39 passed (39)
+   Start at  11:32:49
+   Duration  1.22s (tests 48%, import 31%, transform 19%, worker 1%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (27 modules, 49 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 2 tables.
+
+===== ids: pass =====
+ID check passed: 362 references to 159 IDs, register v0.1.
+
+===== docs: pass =====
+Documentation check passed: 46 Markdown files.

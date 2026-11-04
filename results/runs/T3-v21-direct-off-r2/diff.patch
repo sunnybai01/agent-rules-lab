@@ -1,0 +1,193 @@
+diff --git a/apps/worker/AGENTS.md b/apps/worker/AGENTS.md
+index c86a1d6..77dedf3 100644
+--- a/apps/worker/AGENTS.md
++++ b/apps/worker/AGENTS.md
+@@ -11,5 +11,5 @@ The composition root: jobs, schedules and the wiring of the modules. One of two
+ 
+ ## Rules
+ 
+-- Register each module's event subscriptions here: call `register<Module>Subscriptions(bus, deps)`.
++- Register each module's event subscriptions here: call `register<Module>Subscriptions(bus, deps)`. Registered: `journey`.
+ - Tests across modules use `createApp()`.
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..f064f37 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -25,6 +25,7 @@ export function createApp(options: AppOptions = {}) {
+     bus,
+     clock,
+   });
++  journey.registerJourneySubscriptions(bus, { journey: journeyApi });
+   return { bus, clock, integration: integrationApi, identity: identityApi, journey: journeyApi };
+ }
+ 
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..39cf947 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -1,3 +1,4 @@
++import { kernel } from "@provital/core";
+ import { describe, expect, it } from "vitest";
+ import { createApp } from "./index";
+ 
+@@ -11,4 +12,22 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("creates a welcome call task for a new person", async () => {
++    const app = createApp({ clock: kernel.fixedClock("2027-03-28T22:30:00Z") });
++    const person = await app.identity.registerPerson({
++      email: "c@example.test",
++      givenName: "C",
++      familyName: "D",
++    });
++    const tasks = await app.journey.listTasks(person.id);
++    // 22:30 UTC on 28 March is 00:30 on 29 March in Berlin (summer time).
++    expect(tasks).toEqual([
++      expect.objectContaining({
++        kind: "welcome-call",
++        title: "Welcome call",
++        dueDate: "2027-03-29",
++      }),
++    ]);
++  });
+ });
+diff --git a/packages/core/src/journey/AGENTS.md b/packages/core/src/journey/AGENTS.md
+index d2d3021..c87cfbb 100644
+--- a/packages/core/src/journey/AGENTS.md
++++ b/packages/core/src/journey/AGENTS.md
+@@ -11,8 +11,11 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ | `createJourney({ repo, bus, clock })` | Builds the module service |
+ | `.createTask({ personId, kind, title, dueDate? })` | Creates a task. `dueDate` defaults to today's business date |
+ | `.listTasks(personId)` | Lists the tasks of a person |
++| `registerJourneySubscriptions(bus, { journey })` | Registers the event handlers. The composition root calls it once |
++| `WELCOME_CALL_KIND` | The task kind `welcome-call` |
+ | `InMemoryTaskRepository` | Store for tests and the fixture |
+ | `Journey`, `JourneyDeps`, `CreateTaskInput` | Types of the service |
++| `JourneySubscriptionDeps` | Type of the dependencies of the handlers |
+ | `Task`, `TaskRepository` | Types of the record and the store |
+ 
+ ## Tables (`schema.ts`)
+@@ -23,11 +26,17 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ 
+ ## Events <!-- verified: events -->
+ 
+-None yet. Journey reacts to events of other modules; register the handlers in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++Journey reacts to events of other modules; the handlers are in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++
++| Event | Direction | Payload | Reaction |
++|---|---|---|---|
++| `identity.person-registered` | Consumes | `personId`, `brand` | Creates a task `welcome-call`, title `Welcome call`, due on the business date of the registration |
+ 
+ ## Invariants
+ 
+ - A task never copies personal data from `identity`. It stores the `personId`.
++- A person has at most one `welcome-call` task. The handler skips the event when the task exists, so a second delivery changes nothing.
++- The due date of the welcome call is the Europe/Berlin business date of the event's `occurredAt`, not the time the handler runs.
+ 
+ ## Acceptance criteria
+ 
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..e762a13 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,6 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+ export { createJourney } from "./service";
++export type { JourneySubscriptionDeps } from "./subscriptions";
++export { registerJourneySubscriptions, WELCOME_CALL_KIND } from "./subscriptions";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/subscriptions.test.ts b/packages/core/src/journey/subscriptions.test.ts
+new file mode 100644
+index 0000000..4aa2bf1
+--- /dev/null
++++ b/packages/core/src/journey/subscriptions.test.ts
+@@ -0,0 +1,54 @@
++import { describe, expect, it } from "vitest";
++import type { PersonRegistered } from "../identity";
++import { fixedClock, InMemoryEventBus } from "../kernel";
++import { createJourney, InMemoryTaskRepository, registerJourneySubscriptions } from "./index";
++
++function setup(now = "2027-01-05T08:00:00Z") {
++  const bus = new InMemoryEventBus();
++  const journey = createJourney({
++    repo: new InMemoryTaskRepository(),
++    bus,
++    clock: fixedClock(now),
++  });
++  registerJourneySubscriptions(bus, { journey });
++  return { bus, journey };
++}
++
++function registered(occurredAt: string): PersonRegistered {
++  return {
++    type: "identity.person-registered",
++    id: "e1",
++    occurredAt,
++    payload: { personId: "p1", brand: "provital" },
++  };
++}
++
++describe("journey subscriptions", () => {
++  it("creates a welcome call task when a person registers", async () => {
++    const { bus, journey } = setup();
++    await bus.publish(registered("2027-01-05T08:00:00Z"));
++    const tasks = await journey.listTasks("p1");
++    expect(tasks).toHaveLength(1);
++    expect(tasks[0]).toMatchObject({
++      kind: "welcome-call",
++      title: "Welcome call",
++      dueDate: "2027-01-05",
++    });
++  });
++
++  it("uses the Berlin business date of the registration, not the delivery time", async () => {
++    // 23:30 UTC on 5 January is 00:30 on 6 January in Berlin; the event is delivered two days later.
++    const { bus, journey } = setup("2027-01-08T10:00:00Z");
++    await bus.publish(registered("2027-01-05T23:30:00Z"));
++    const [task] = await journey.listTasks("p1");
++    expect(task?.dueDate).toBe("2027-01-06");
++  });
++
++  it("creates one task when the event is delivered twice", async () => {
++    const { bus, journey } = setup();
++    const event = registered("2027-01-05T08:00:00Z");
++    await bus.publish(event);
++    await bus.publish(event);
++    expect(await journey.listTasks("p1")).toHaveLength(1);
++  });
++});
+diff --git a/packages/core/src/journey/subscriptions.ts b/packages/core/src/journey/subscriptions.ts
+new file mode 100644
+index 0000000..caf24d7
+--- /dev/null
++++ b/packages/core/src/journey/subscriptions.ts
+@@ -0,0 +1,26 @@
++import type { PersonRegistered } from "../identity";
++import { businessDate, type EventBus } from "../kernel";
++import type { Journey } from "./service";
++
++export const WELCOME_CALL_KIND = "welcome-call";
++
++export interface JourneySubscriptionDeps {
++  journey: Journey;
++}
++
++/** The handlers of the `journey` module. The composition root calls this once. */
++export function registerJourneySubscriptions(bus: EventBus, { journey }: JourneySubscriptionDeps) {
++  bus.subscribe<PersonRegistered>("identity.person-registered", async (event) => {
++    const { personId } = event.payload;
++    // Idempotent: a second delivery of the event finds the task and stops.
++    const tasks = await journey.listTasks(personId);
++    if (tasks.some((t) => t.kind === WELCOME_CALL_KIND)) return;
++    await journey.createTask({
++      personId,
++      kind: WELCOME_CALL_KIND,
++      title: "Welcome call",
++      // The registration date, not the time of delivery, so a late retry keeps the date.
++      dueDate: businessDate(new Date(event.occurredAt)),
++    });
++  });
++}

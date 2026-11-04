@@ -1,0 +1,160 @@
+diff --git a/docs/adr/0017-consent-recorded-event.md b/docs/adr/0017-consent-recorded-event.md
+new file mode 100644
+index 0000000..ad148ea
+--- /dev/null
++++ b/docs/adr/0017-consent-recorded-event.md
+@@ -0,0 +1,27 @@
++# ADR-0017: Publish each consent decision as `identity.consent-recorded`
++
++- **Status:** Proposed
++- **Date:** 2026-11-04
++- **Deciders:** <names>
++- **Sources:** T3-AC-004, T3-D-009, architecture section 4, AN-900
++
++## Context
++
++`identity` owns consents (architecture section 4). T3-AC-004 requires an append-only consent record: person, purpose, text version, channel, decision and time. Other modules, for example a later e-mail marketing integration, must learn about each change of a consent. A module reacts to another module through an event and never calls it to write (hard rule 3). The event convention says a payload holds IDs, not copies of personal data; a consent decision is personal data.
++
++## Options
++
++1. **Event with IDs only** (`consentId`, `personId`). Good: follows the convention to the letter. Bad: every subscriber must call `identity.currentConsent` to act, and the read may see a later decision than the event.
++2. **Event with the decision** (`consentId`, `personId`, `purpose`, `granted`). Good: a subscriber can act on the event alone and the event is a faithful copy of one append-only record. Bad: the bus carries a small piece of personal data (the choice, not a name or contact value).
++3. **No event; subscribers poll `consentHistory`.** Good: nothing new on the bus. Bad: breaks "other modules must learn about each change", couples modules to polling.
++
++## Decision
++
++We choose option 2. The purpose and the decision are what a subscriber needs, they identify no one without the `identity` tables, and the record they copy never changes, so the event cannot become stale. The event is published after the record is stored, once per `recordConsent` call.
++
++## Consequences
++
++- Subscribers react to grants and withdrawals without reading `identity`.
++- The event payload is an exception to "IDs only"; it is limited to `purpose` and `granted`, and the type `ConsentRecorded` in `identity` fixes it.
++- A subscriber is idempotent on `consentId`.
++- Tests: `packages/core/src/identity/consent.test.ts` (T3-AC-004).
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 042774e..4ff61e2 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -4,7 +4,7 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ 
+ ## How to write an ADR
+ 
+-1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0017.** Then change this line.
++1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0018.** Then change this line.
+ 2. Numbers 0001 to 0014 are reserved for the ADRs under review (technical-decisions.md section 4). Do not use them for a new ADR.
+ 3. Fill every section. Cite Discovery IDs that `pnpm ids show` knows, and TD numbers. At most 80 lines.
+ 4. Set the status to `Proposed`. A second person sets it to `Accepted`. After that, the ADR is not changed: a new ADR supersedes it.
+@@ -17,3 +17,4 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ | 0002–0014 | Under review, not in this repository yet | — |
+ | [0015](0015-ai-development-workflow.md) | AI development workflow | Proposed |
+ | [0016](0016-documentation-architecture.md) | Documentation architecture | Proposed |
++| [0017](0017-consent-recorded-event.md) | Publish each consent decision as `identity.consent-recorded` | Proposed |
+diff --git a/docs/specs/AN-900/plan.md b/docs/specs/AN-900/plan.md
+new file mode 100644
+index 0000000..eff49dd
+--- /dev/null
++++ b/docs/specs/AN-900/plan.md
+@@ -0,0 +1,15 @@
++# AN-900: plan
++
++Each step is small and ends with passing tests. Mark a step `[x]` when it is done, in the same commit.
++
++- [ ] 1. Test `T3-AC-004: records a consent with person, purpose, text version, channel, decision and time` and `T3-AC-004: fails for an unknown person` → `ConsentRecord`, `ConsentChannel`, `ConsentRepository` (insert, listByPerson only), `InMemoryConsentRepository`, `PersonNotFoundError`, `recordConsent`; `createIdentity` gets `consents` (files: `identity/consent.ts`, `identity/service.ts`, `identity/consent.test.ts`, existing callers of `createIdentity`)
++- [ ] 2. Test `T3-AC-004: a new decision adds a record and never changes the earlier one` and `T3-AC-004: consentHistory returns all records oldest first` → `consentHistory` (files: `identity/service.ts`, `identity/consent.test.ts`)
++- [ ] 3. Test `T3-AC-004: currentConsent returns the latest record per purpose, or null` → `currentConsent` (files: `identity/service.ts`, `identity/consent.test.ts`)
++- [ ] 4. Test `T3-AC-004: publishes identity.consent-recorded after each decision` → `ConsentRecorded` type and publish (files: `identity/consent.ts`, `identity/service.ts`, `identity/consent.test.ts`)
++- [ ] 5. Table `identity.consent` with data metadata; `pnpm pii` passes (files: `identity/schema.ts`)
++- [ ] 6. Exports in `identity/index.ts`; wire `InMemoryConsentRepository` where `InMemoryPersonRepository` is wired (fixture, `apps/*`)
++- [ ] 7. Update the module `AGENTS.md` (API, table, event, invariant). Run `/review`, then `pnpm check`.
++
++## Handoff
++
++Empty while one session works. `/handoff` writes here: the last finished step, the state of the next step, the next command.
+diff --git a/docs/specs/AN-900/spec.md b/docs/specs/AN-900/spec.md
+new file mode 100644
+index 0000000..e15ccbf
+--- /dev/null
++++ b/docs/specs/AN-900/spec.md
+@@ -0,0 +1,82 @@
++# AN-900: Record a consent for a person
++
++- **Jira:** AN-900
++- **Gate:** design (trigger 2: new event `identity.consent-recorded`; trigger 3: new table `identity.consent`)
++- **Status:** Approved
++- **Approved-by:** lab-approver 2026-11-04
++- **Baseline:** Discovery v0.1
++- **Module:** identity. Touches: none (other modules learn about consents through the new event)
++
++## Context
++
++The platform records each consent decision of a person, for example for marketing e-mails, and head office must be able to prove each consent (T4 privacy controls). `identity` owns consents (architecture section 4, T3-D-009: one person record).
++
++## Acceptance criteria
++
++IDs only; `pnpm ids show <ID>` prints the text.
++
++| ID | Test |
++|---|---|
++| T3-AC-004 | `packages/core/src/identity/consent.test.ts` |
++
++## Design increment
++
++- **Module file** (`packages/core/src/identity/AGENTS.md`):
++  - Public API rows:
++    - `.recordConsent({ personId, purpose, textVersion, channel, granted })` → `Promise<ConsentRecord>`. Appends a record. Publishes `identity.consent-recorded`. Throws `PersonNotFoundError` for an unknown person.
++    - `.currentConsent(personId, purpose)` → `Promise<ConsentRecord | null>`: the latest record for the purpose.
++    - `.consentHistory(personId)` → `Promise<ConsentRecord[]>`: all records of the person, oldest first.
++    - `InMemoryConsentRepository`, `PersonNotFoundError`.
++    - Types `ConsentRecord`, `ConsentChannel` (`"web" | "advisor" | "import"`), `RecordConsentInput`, `ConsentRepository`, `ConsentRecorded`.
++    - `createIdentity({ repo, consents, bus, clock })`: new dependency `consents: ConsentRepository`.
++  - Tables row: `identity.consent` with personal columns `person_id`, `purpose`, `granted`.
++  - Events row: `identity.consent-recorded`, Emits, payload `consentId`, `personId`, `purpose`, `granted`.
++  - Invariants: consent records are append-only; the repository has no update or delete (T3-AC-004). The current decision for a purpose is the latest record.
++  - Acceptance criteria: T3-AC-003, T3-AC-004 (unchanged list).
++- **Contracts:** new event, see [ADR-0017](../../adr/0017-consent-recorded-event.md).
++
++  ```ts
++  type ConsentRecorded = DomainEvent<
++    "identity.consent-recorded",
++    { consentId: string; personId: string; purpose: string; granted: boolean }
++  >;
++  ```
++
++- **Schema:** new table `identity.consent` in `packages/core/src/identity/schema.ts`.
++
++  | Column | Type | Data metadata |
++  |---|---|---|
++  | `id` | `uuid` PK (UUIDv7) | `notPersonal` |
++  | `person_id` | `uuid` not null, index | personal, `identity`, "Link the consent to the person who gave it", owner `identity`, `account lifetime + 3 years` |
++  | `purpose` | `text` not null | personal, `preference`, "Prove which consent the person decided on", owner `identity`, `account lifetime + 3 years` |
++  | `text_version` | `text` not null | `notPersonal` |
++  | `channel` | `text` not null (`web`, `advisor`, `import`) | `notPersonal` |
++  | `granted` | `boolean` not null | personal, `preference`, "Prove the consent decision of the person", owner `identity`, `account lifetime + 3 years` |
++  | `decided_at` | `timestamp with time zone` not null | `notPersonal` |
++
++  No new personal data category: consent choices use the existing `preference` category. Retention follows the data conventions for consent records.
++
++## Local decisions
++
++- The register text names "type", "source", "date" and "withdrawal"; they map to `purpose`, `channel`, `decidedAt` and `granted: false`. This is a mapping, not a contradiction.
++- `decidedAt` is the clock time when `recordConsent` runs; the API has no time input. Migration of old consents (which would need a past time) is out of scope.
++- A withdrawal without an earlier grant is recorded as well: it is still a decision to prove.
++- `consentHistory` orders by `decidedAt`, then by `id` (UUIDv7) for records with the same time.
++
++## Out of scope
++
++- The consent screens.
++- The interface to the e-mail marketing tool.
++- The migration of old consents.
++
++## Open questions
++
++**Answers of the approver (lab-approver, a person):** for each question, take the option that follows the conventions in `docs/conventions/` and the module files. Where they say nothing, take the option that this spec proposes. Record each answer under "Local decisions" when you implement.
++
++1. **Purpose values.** The story does not list the purposes. Proposal: a free non-empty `text` (for example `marketing-email`), validated only as non-empty. Or must it be a closed list (an enum in the type and the column)? Which values?
++2. **Event payload.** The event convention says the payload holds IDs, not copies of personal data. Other modules must learn about each change, and a subscriber that only gets `consentId` must call `identity` to read it. Proposal (ADR-0017): include `purpose` and `granted` in the payload, because a marketing subscriber cannot act without them and they are not identifying on their own. Confirm, or keep the payload to `consentId` and `personId`.
++3. **Erasure.** Records are "never changed or deleted" (T3-AC-004), but personal data has a retention of `account lifetime + 3 years`. Does the later erasure job (not in this story) delete consent records after the retention, as an exception to the rule? This story adds no delete path.
++
++## Deviations
++
++Written during the implementation.

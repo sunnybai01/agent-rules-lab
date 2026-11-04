@@ -1,0 +1,29 @@
+
+===== typecheck: pass =====
+
+===== lint: pass =====
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T2-v2-direct-off-r2
+
+
+ Test Files  9 passed (9)
+      Tests  42 passed (42)
+   Start at  10:37:21
+   Duration  843ms (tests 47%, import 34%, transform 17%, worker 2%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (26 modules, 45 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 2 tables.
+
+===== ids: pass =====
+ID check passed: 386 references to 157 IDs, register v0.1.
+
+===== docs: pass =====
+Documentation check passed: 47 Markdown files.

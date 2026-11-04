@@ -1,0 +1,162 @@
+{
+  "runId": "T6-v21-direct-off-r1",
+  "task": "T6",
+  "layout": "v21",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 1,
+  "model": "claude-opus-5-5",
+  "startedAt": "2026-11-04T03:28:15.934Z",
+  "wallMs": 262185,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true,
+    "ids": true,
+    "docs": true,
+    "trace": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "records all fields of T3-AC-004",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the current consent is the latest decision; history keeps all, oldest first",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "fails for an unknown person",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "publishes an event for each consent change",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "a consent table exists in the identity schema with data metadata",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "rejects an unknown channel",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the decision column is personal data (consent choices are personal data)",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the event payload holds no e-mail or name",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "docs/adr/0017-consent-changed-event.md",
+    "docs/adr/README.md",
+    "docs/specs/AN-900/plan.md",
+    "docs/specs/AN-900/spec.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/identity/consent.test.ts",
+    "packages/core/src/identity/consent.ts",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/schema.ts",
+    "packages/core/src/identity/service.ts"
+  ],
+  "docsChanged": [
+    "docs/adr/0017-consent-changed-event.md",
+    "docs/adr/README.md",
+    "packages/core/src/identity/AGENTS.md"
+  ],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 1.1564514,
+  "agentMs": 251648,
+  "turns": 43,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "Ignoring 7 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T6-v21-direct-off-r1\"].hasTrustDialogAccepted: true in /Users/57block/.claude.json.\n",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 1.1564514,
+      "durationMs": 251648,
+      "turns": 43,
+      "usage": {
+        "input_tokens": 36,
+        "cache_creation_input_tokens": 47838,
+        "cache_read_input_tokens": 717166,
+        "output_tokens": 18252,
+        "output_tokens_details": {
+          "thinking_tokens": 1465
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 47838,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1299,
+            "cache_read_input_tokens": 59585,
+            "cache_creation_input_tokens": 869,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 869
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": " must:\n- fill `Approved-by` in `docs/specs/AN-900/spec.md`, which stays `Draft` until then;\n- set ADR-0017 to `Accepted` and fill in its Deciders.\n\n**What it does**\n- **`recordConsent`** adds a new record and returns it. It fails for an unknown person and stores nothing. It also rejects any channel other than `web`, `advisor` or `import`.\n- **`currentConsent`** returns the latest record for that person and purpose, or `null`. **`consentHistory`** returns all records, oldest first.\n- **Records can't be changed or deleted.** The store only has \"add\" and \"list\", and a test checks that. A withdrawal is a new record with `granted: false`.\n- **Other modules learn about changes** through a new event, `identity.consent-changed`. It carries only the record, person and purpose IDs, not the decision itself, because the project's event rules keep personal data out of events. A module that reacts reads the decision with `currentConsent`. ADR-0017 records this choice.\n- **New table `identity.consent`.** Person, channel, decision and time are marked as personal data and kept for \"account lifetime + 3 years\", as the data rules require for consents.\n- **Breaking change:** `createIdentity` now needs a `consents` store. I updated the two places that call it (the worker and the existing identity test).\n\n**How the story maps to T3-AC-004:** the AC's wording is type, text version, date, source and withdrawal. I mapped these to purpose, text version, time of decision, channel, and a new \"withdrawn\" record. The spec lists this under \"Local decisions\", since it's a naming choice rather than a change to the AC.\n\n**Not done yet:**\n- There's no protection in the database itself against changing or deleting rows, and no real PostgreSQL store. Both belong with the first PostgreSQL store for this module.\n- Open question in the spec: should purposes be limited to a fixed list? For now `purpose` is free text.\n\n**Checks:** `pnpm check` passed. `pnpm trace --require T3-AC-004` passed, with tests in `consent.test.ts` and `worker.test.ts`. The `reviewer` subagent approved and found three minor test and doc issues, which I fixed before the final check run.\n\n**Pull request**\n\nTitle: `feat: record consents of a person (AN-900)`\n\n```\nSpec: docs/specs/AN-900/spec.md\nRefs: AN-900\nCovered: T3-AC-004\n\n## Verification\n- pnpm check: passed (typecheck, lint, 44 tests, arch, pii 3 tables, ids, docs)\n- pnpm trace --require T3-AC-004: passed (consent.test.ts, worker.test.ts)\n- /review (reviewer subagent): APPROVE; 3 minor test/doc findings fixed\n\n## Deviations from spec\nNone.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n```\n\nAlso confirm that AN-900 is the right Jira key.\n\n**Files:**\n- **New:** `identity/consent.ts` and `consent.test.ts`, `docs/adr/0017-consent-changed-event.md`, `docs/specs/AN-900/spec.md` and `plan.md`\n- **Changed:** `identity/service.ts`, `index.ts`, `schema.ts`, `AGENTS.md` and `identity.test.ts`; the worker's `index.ts` and `worker.test.ts`; the ADR index",
+      "toolCalls": {
+        "Bash": 22,
+        "Grep": 3,
+        "Write": 7,
+        "Edit": 16,
+        "Agent": 1,
+        "Read": 14
+      },
+      "docsRead": [
+        "docs/specs/AN-900/spec.md",
+        "docs/specs/AN-900/plan.md",
+        "docs/adr/0017-consent-changed-event.md",
+        "packages/core/src/identity/AGENTS.md",
+        "docs/conventions/data.md",
+        "docs/conventions/events.md",
+        "docs/adr/README.md"
+      ],
+      "filesReadCount": 14
+    }
+  ]
+}

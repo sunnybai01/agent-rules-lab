@@ -1,0 +1,632 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..e5e5fa9 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -17,6 +17,7 @@ export function createApp(options: AppOptions = {}) {
+   const integrationApi = integration.createIntegration({ erp, clock });
+   const identityApi = identity.createIdentity({
+     repo: new identity.InMemoryPersonRepository(),
++    consents: new identity.InMemoryConsentRepository(),
+     bus,
+     clock,
+   });
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..3fa8db0 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -11,4 +11,21 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("T3-AC-004: records a consent through the app", async () => {
++    const app = createApp();
++    const person = await app.identity.registerPerson({
++      email: "c@example.test",
++      givenName: "C",
++      familyName: "D",
++    });
++    const record = await app.identity.recordConsent({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "web",
++      granted: true,
++    });
++    expect(await app.identity.currentConsent(person.id, "marketing-email")).toEqual(record);
++  });
+ });
+diff --git a/docs/adr/0017-consent-changed-event.md b/docs/adr/0017-consent-changed-event.md
+new file mode 100644
+index 0000000..eb5f8f0
+--- /dev/null
++++ b/docs/adr/0017-consent-changed-event.md
+@@ -0,0 +1,26 @@
++# ADR-0017: Event `identity.consent-changed` carries IDs, not the decision
++
++- **Status:** Proposed
++- **Date:** 2026-11-04
++- **Deciders:** <tech lead>, <second approver>
++- **Sources:** T3-AC-004, T3-D-009, TD-08, [architecture.md section 4](../architecture.md), [event conventions](../conventions/events.md), AN-900
++
++## Context
++
++The `identity` module owns consents (architecture section 4), and the architecture lists "consent changed" among its events. AN-900 records each consent decision as an append-only record (T3-AC-004) and requires that other modules learn about each change, for example journeys that send marketing e-mails. Modules react through events and never call another module to write (TD-08). The event conventions say a payload holds IDs, not copies of personal data; a consent decision is personal data (data conventions).
++
++## Options
++
++1. **IDs only: `consentId`, `personId`, `purpose`.** A reacting module reads the decision with `identity.currentConsent`. Good: no personal data on the queue or in the outbox; one source of truth; a late or repeated delivery reads the current state, which keeps handlers idempotent. Bad: one extra read per reaction.
++2. **Full record in the payload (`granted`, `channel`, `textVersion`, `decidedAt`).** Good: no read. Bad: personal data copied into the outbox and every consumer; an out-of-order delivery can apply an old decision.
++3. **One event per direction (`consent-given`, `consent-withdrawn`).** Good: consumers subscribe to what they need. Bad: two contracts for one fact, and the direction is still personal data in the event name.
++
++## Decision
++
++We choose option 1. It follows the event conventions, keeps the decision in one table, and makes consumers read the current decision at the time they act, which journeys must do anyway (they check consent at send time). `purpose` is not personal; it lets a consumer ignore purposes it does not use without a read.
++
++## Consequences
++
++- Easier: adding consumers; no personal data retention in the event store.
++- Harder: a consumer needs the `identity` public API to read the decision. It reads only, so rule 3 holds.
++- The test "publishes identity.consent-changed with IDs only" in `packages/core/src/identity/consent.test.ts` checks the payload; `pnpm docs` checks the module Events table.
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 042774e..430de98 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -4,7 +4,7 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ 
+ ## How to write an ADR
+ 
+-1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0017.** Then change this line.
++1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0018.** Then change this line.
+ 2. Numbers 0001 to 0014 are reserved for the ADRs under review (technical-decisions.md section 4). Do not use them for a new ADR.
+ 3. Fill every section. Cite Discovery IDs that `pnpm ids show` knows, and TD numbers. At most 80 lines.
+ 4. Set the status to `Proposed`. A second person sets it to `Accepted`. After that, the ADR is not changed: a new ADR supersedes it.
+@@ -17,3 +17,4 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ | 0002–0014 | Under review, not in this repository yet | — |
+ | [0015](0015-ai-development-workflow.md) | AI development workflow | Proposed |
+ | [0016](0016-documentation-architecture.md) | Documentation architecture | Proposed |
++| [0017](0017-consent-changed-event.md) | Event `identity.consent-changed` carries IDs, not the decision | Proposed |
+diff --git a/docs/specs/AN-900/plan.md b/docs/specs/AN-900/plan.md
+new file mode 100644
+index 0000000..e492dd8
+--- /dev/null
++++ b/docs/specs/AN-900/plan.md
+@@ -0,0 +1,12 @@
++# AN-900: plan
++
++Each step is small and ends with passing tests. Mark a step `[x]` when it is done, in the same commit.
++
++- [x] 1. T3-AC-004 tests for record, withdrawal, history, channel, unknown person, event → consent record, store and service methods (files: `identity/consent.test.ts`, `identity/consent.ts`, `identity/service.ts`, `identity/index.ts`)
++- [x] 2. Table `identity.consent` with data metadata (files: `identity/schema.ts`)
++- [x] 3. Wire the consent store in the composition root, test across the app (files: `apps/worker/src/index.ts`, `apps/worker/src/worker.test.ts`)
++- [x] 4. ADR-0017 for the event; update the module `AGENTS.md`. Run `/review`, then `pnpm check`.
++
++## Handoff
++
++Empty while one session works. `/handoff` writes here: the last finished step, the state of the next step, the next command.
+diff --git a/docs/specs/AN-900/spec.md b/docs/specs/AN-900/spec.md
+new file mode 100644
+index 0000000..d763a26
+--- /dev/null
++++ b/docs/specs/AN-900/spec.md
+@@ -0,0 +1,58 @@
++# AN-900: Record a consent for a person
++
++- **Jira:** AN-900
++- **Gate:** design (trigger 2, 3)
++- **Status:** Draft
++- **Approved-by:** <GitHub login> <YYYY-MM-DD>
++- **Baseline:** Discovery v0.1
++- **Module:** identity. Touches: other modules through the new event `identity.consent-changed`; `apps/worker` wires the consent store
++
++## Context
++
++Head office must prove each consent of a person, for example for marketing e-mails. The `identity` module owns consents (architecture section 4, T3-D-009).
++
++## Acceptance criteria
++
++IDs only; `pnpm ids show <ID>` prints the text.
++
++| ID | Test |
++|---|---|
++| T3-AC-004 | `packages/core/src/identity/consent.test.ts`, `apps/worker/src/worker.test.ts` |
++
++## Design increment
++
++- **Module file:** `createIdentity` takes `consents: ConsentRepository`. New methods `recordConsent({ personId, purpose, textVersion, channel, granted }): ConsentRecord` (throws `UnknownPersonError`; an error for an unknown channel), `currentConsent(personId, purpose): ConsentRecord | null`, `consentHistory(personId): ConsentRecord[]` (oldest first). New exports `InMemoryConsentRepository`, `UnknownPersonError`, types `ConsentRecord`, `ConsentChannel`, `ConsentRepository`, `ConsentChanged`, `RecordConsentInput`. New invariants: records are append-only; the channel is `web`, `advisor` or `import`. AC: T3-AC-004.
++- **Contracts:** new event `identity.consent-changed`, payload `consentId`, `personId`, `purpose` (IDs only; consumers read the decision with `currentConsent`). [ADR-0017](../../adr/0017-consent-changed-event.md). No ERP operation.
++- **Schema:** new table `identity.consent`:
++
++  | Column | Personal | Category | Purpose | Retention |
++  |---|---|---|---|---|
++  | `id` | no | | | |
++  | `person_id` (FK `identity.person`) | yes | identity | Link the decision to the person | account lifetime + 3 years |
++  | `purpose` | no | | | |
++  | `text_version` | no | | | |
++  | `channel` (`web`, `advisor`, `import`) | yes | preference | Proof of consent: where | account lifetime + 3 years |
++  | `granted` | yes | preference | Proof of consent: the decision | account lifetime + 3 years |
++  | `decided_at` | yes | preference | Proof of consent: when | account lifetime + 3 years |
++
++  Owner: `identity`. Index on (`person_id`, `purpose`). Existing categories only.
++
++## Local decisions
++
++- T3-AC-004 "type" maps to `purpose`, "source" to `channel`, "date" to `decided_at`, "withdrawal" to a new record with `granted: false`. Mapping, not a change of the AC.
++- `purpose` is free text for now; no purpose catalogue is in scope.
++- The store interface has `append` and `listByPerson` only, so the code cannot change or delete a record.
++- The current decision is the latest record per person and purpose by `decided_at`; equal times keep insertion order.
++
++## Out of scope
++
++- Consent screens, the e-mail marketing tool interface, the migration of old consents (story scope).
++- A database-level guard against `UPDATE`/`DELETE` (grants or a trigger) and the Drizzle repository: they come with the first PostgreSQL adapter of `identity`.
++
++## Open questions
++
++- Should a purpose catalogue (allowed purposes) be fixed in this module, or by the e-mail marketing integration?
++
++## Deviations
++
++None.
+diff --git a/packages/core/src/identity/AGENTS.md b/packages/core/src/identity/AGENTS.md
+index 9dbad7d..075faed 100644
+--- a/packages/core/src/identity/AGENTS.md
++++ b/packages/core/src/identity/AGENTS.md
+@@ -8,31 +8,40 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ | Export | Use |
+ |---|---|
+-| `createIdentity({ repo, bus, clock })` | Builds the module service |
++| `createIdentity({ repo, consents, bus, clock })` | Builds the module service |
+ | `.registerPerson({ email, givenName, familyName, brand? })` | Creates a person. Publishes `identity.person-registered` |
+ | `.getPerson(id)` | Reads a person or `null` |
+-| `InMemoryPersonRepository` | Store for tests and the fixture |
++| `.recordConsent({ personId, purpose, textVersion, channel, granted })` | Adds a consent record and returns it. Publishes `identity.consent-changed`. Throws `UnknownPersonError`, or an error for a channel outside `web`, `advisor`, `import` |
++| `.currentConsent(personId, purpose)` | The latest consent record for the purpose, or `null` |
++| `.consentHistory(personId)` | All consent records of the person, oldest first |
++| `InMemoryPersonRepository`, `InMemoryConsentRepository` | Stores for tests and the fixture |
+ | `EmailAlreadyRegisteredError` | Thrown when the e-mail exists |
+-| `Identity`, `IdentityDeps`, `RegisterPersonInput` | Types of the service |
++| `UnknownPersonError` | Thrown when a consent names an unknown person |
++| `Identity`, `IdentityDeps`, `RegisterPersonInput`, `RecordConsentInput` | Types of the service |
+ | `Person`, `PersonRepository`, `PersonRegistered` | Types of the record, the store and the event |
++| `ConsentRecord`, `ConsentChannel`, `ConsentRepository`, `ConsentChanged` | Types of the consent record, its channel, the store and the event |
+ 
+ ## Tables (`schema.ts`)
+ 
+ | Table | Personal columns |
+ |---|---|
+ | `identity.person` | `email`, `given_name`, `family_name` |
++| `identity.consent` | `person_id`, `channel`, `granted`, `decided_at` |
+ 
+ ## Events <!-- verified: events -->
+ 
+ | Event | Direction | Payload |
+ |---|---|---|
+ | `identity.person-registered` | Emits | `personId`, `brand` |
++| `identity.consent-changed` | Emits | `consentId`, `personId`, `purpose` ([ADR-0017](../../../../docs/adr/0017-consent-changed-event.md)) |
+ 
+ ## Invariants
+ 
+ - One person record per e-mail address. The e-mail is stored in lower case (T3-AC-003).
+ - At most one ERP customer number per person (T3-AC-003).
+ - ERP master data comes through the `integration` module, never from the ERP port.
++- Consent records are append-only: never changed or deleted. A withdrawal is a new record with `granted: false`. The current decision is the latest record per person and purpose (T3-AC-004).
++- The consent channel is `web`, `advisor` or `import` (T3-AC-004).
+ 
+ ## Acceptance criteria
+ 
+diff --git a/packages/core/src/identity/consent.test.ts b/packages/core/src/identity/consent.test.ts
+new file mode 100644
+index 0000000..5c70e59
+--- /dev/null
++++ b/packages/core/src/identity/consent.test.ts
+@@ -0,0 +1,160 @@
++import { describe, expect, it } from "vitest";
++import { type Clock, InMemoryEventBus } from "../kernel";
++import {
++  createIdentity,
++  InMemoryConsentRepository,
++  InMemoryPersonRepository,
++  UnknownPersonError,
++} from "./index";
++
++function steppingClock(start: string): Clock & { advance(ms: number): void } {
++  let current = new Date(start).getTime();
++  return {
++    now: () => new Date(current),
++    advance(ms: number) {
++      current += ms;
++    },
++  };
++}
++
++async function setup() {
++  const bus = new InMemoryEventBus();
++  const clock = steppingClock("2027-01-05T08:00:00Z");
++  const consents = new InMemoryConsentRepository();
++  const identity = createIdentity({
++    repo: new InMemoryPersonRepository(),
++    consents,
++    bus,
++    clock,
++  });
++  const person = await identity.registerPerson({
++    email: "erika@example.test",
++    givenName: "Erika",
++    familyName: "Muster",
++  });
++  bus.published.length = 0;
++  return { bus, clock, consents, identity, person };
++}
++
++describe("identity consents", () => {
++  it("T3-AC-004: stores person, purpose, text version, channel, decision and time", async () => {
++    const { identity, person } = await setup();
++    const record = await identity.recordConsent({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "web",
++      granted: true,
++    });
++    expect(record).toMatchObject({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "web",
++      granted: true,
++      decidedAt: "2027-01-05T08:00:00.000Z",
++    });
++    expect(record.id).toEqual(expect.any(String));
++  });
++
++  it("T3-AC-004: a withdrawal adds a record and keeps the earlier one unchanged", async () => {
++    const { clock, identity, person } = await setup();
++    const given = await identity.recordConsent({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "web",
++      granted: true,
++    });
++    clock.advance(60_000);
++    const withdrawn = await identity.recordConsent({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "advisor",
++      granted: false,
++    });
++    expect(await identity.currentConsent(person.id, "marketing-email")).toEqual(withdrawn);
++    expect(await identity.consentHistory(person.id)).toEqual([given, withdrawn]);
++  });
++
++  it("T3-AC-004: history is oldest first across purposes", async () => {
++    const { clock, identity, person } = await setup();
++    const first = await identity.recordConsent({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "import",
++      granted: true,
++    });
++    clock.advance(1_000);
++    const second = await identity.recordConsent({
++      personId: person.id,
++      purpose: "newsletter",
++      textVersion: "2027-02",
++      channel: "web",
++      granted: true,
++    });
++    expect(await identity.consentHistory(person.id)).toEqual([first, second]);
++    expect(await identity.currentConsent(person.id, "newsletter")).toEqual(second);
++  });
++
++  it("T3-AC-004: the store has no way to change or delete a record", () => {
++    const methods = Object.getOwnPropertyNames(InMemoryConsentRepository.prototype)
++      .filter((name) => name !== "constructor")
++      .sort();
++    expect(methods).toEqual(["append", "listByPerson"]);
++  });
++
++  it("T3-AC-004: rejects a channel outside web, advisor and import", async () => {
++    const { identity, person } = await setup();
++    await expect(
++      identity.recordConsent({
++        personId: person.id,
++        purpose: "marketing-email",
++        textVersion: "2027-01",
++        channel: "phone" as never,
++        granted: true,
++      }),
++    ).rejects.toThrow(/channel/);
++  });
++
++  it("returns null when no decision exists for the purpose", async () => {
++    const { identity, person } = await setup();
++    expect(await identity.currentConsent(person.id, "marketing-email")).toBeNull();
++    expect(await identity.consentHistory(person.id)).toEqual([]);
++  });
++
++  it("fails for an unknown person and stores nothing", async () => {
++    const { bus, consents, identity } = await setup();
++    const unknownId = "00000000-0000-7000-8000-000000000000";
++    await expect(
++      identity.recordConsent({
++        personId: unknownId,
++        purpose: "marketing-email",
++        textVersion: "2027-01",
++        channel: "web",
++        granted: true,
++      }),
++    ).rejects.toBeInstanceOf(UnknownPersonError);
++    expect(await consents.listByPerson(unknownId)).toEqual([]);
++    expect(bus.published).toHaveLength(0);
++  });
++
++  it("publishes identity.consent-changed with IDs only", async () => {
++    const { bus, identity, person } = await setup();
++    const record = await identity.recordConsent({
++      personId: person.id,
++      purpose: "marketing-email",
++      textVersion: "2027-01",
++      channel: "web",
++      granted: true,
++    });
++    expect(bus.published).toHaveLength(1);
++    expect(bus.published[0]).toMatchObject({
++      type: "identity.consent-changed",
++      occurredAt: record.decidedAt,
++      payload: { consentId: record.id, personId: person.id, purpose: "marketing-email" },
++    });
++  });
++});
+diff --git a/packages/core/src/identity/consent.ts b/packages/core/src/identity/consent.ts
+new file mode 100644
+index 0000000..6519584
+--- /dev/null
++++ b/packages/core/src/identity/consent.ts
+@@ -0,0 +1,41 @@
++import type { DomainEvent } from "../kernel";
++
++export const CONSENT_CHANNELS = ["web", "advisor", "import"] as const;
++export type ConsentChannel = (typeof CONSENT_CHANNELS)[number];
++
++/** One consent decision (T3-AC-004). Never changed or deleted; a new decision adds a record. */
++export interface ConsentRecord {
++  readonly id: string;
++  readonly personId: string;
++  readonly purpose: string;
++  readonly textVersion: string;
++  readonly channel: ConsentChannel;
++  readonly granted: boolean;
++  readonly decidedAt: string;
++}
++
++export type ConsentChanged = DomainEvent<
++  "identity.consent-changed",
++  { consentId: string; personId: string; purpose: string }
++>;
++
++/** Append-only storage of consent records. It has no update and no delete (T3-AC-004). */
++export interface ConsentRepository {
++  append(record: ConsentRecord): Promise<void>;
++  /** All records of the person, oldest first. */
++  listByPerson(personId: string): Promise<ConsentRecord[]>;
++}
++
++export class InMemoryConsentRepository implements ConsentRepository {
++  private readonly rows: ConsentRecord[] = [];
++
++  async append(record: ConsentRecord): Promise<void> {
++    this.rows.push(record);
++  }
++
++  async listByPerson(personId: string): Promise<ConsentRecord[]> {
++    return this.rows
++      .filter((record) => record.personId === personId)
++      .sort((a, b) => a.decidedAt.localeCompare(b.decidedAt));
++  }
++}
+diff --git a/packages/core/src/identity/identity.test.ts b/packages/core/src/identity/identity.test.ts
+index 097fec0..6bed548 100644
+--- a/packages/core/src/identity/identity.test.ts
++++ b/packages/core/src/identity/identity.test.ts
+@@ -1,11 +1,17 @@
+ import { describe, expect, it } from "vitest";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createIdentity, EmailAlreadyRegisteredError, InMemoryPersonRepository } from "./index";
++import {
++  createIdentity,
++  EmailAlreadyRegisteredError,
++  InMemoryConsentRepository,
++  InMemoryPersonRepository,
++} from "./index";
+ 
+ function setup() {
+   const bus = new InMemoryEventBus();
+   const identity = createIdentity({
+     repo: new InMemoryPersonRepository(),
++    consents: new InMemoryConsentRepository(),
+     bus,
+     clock: fixedClock("2027-01-05T08:00:00Z"),
+   });
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..3677a43 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,11 @@
++export type {
++  ConsentChanged,
++  ConsentChannel,
++  ConsentRecord,
++  ConsentRepository,
++} from "./consent";
++export { InMemoryConsentRepository } from "./consent";
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+-export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+-export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export type { Identity, IdentityDeps, RecordConsentInput, RegisterPersonInput } from "./service";
++export { createIdentity, EmailAlreadyRegisteredError, UnknownPersonError } from "./service";
+diff --git a/packages/core/src/identity/schema.ts b/packages/core/src/identity/schema.ts
+index 2e5a8bf..a0681f8 100644
+--- a/packages/core/src/identity/schema.ts
++++ b/packages/core/src/identity/schema.ts
+@@ -1,4 +1,4 @@
+-import { pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
++import { boolean, index, pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
+ import { notPersonal, withDataMeta } from "../kernel";
+ 
+ export const identitySchema = pgSchema("identity");
+@@ -41,3 +41,57 @@ export const persons = withDataMeta(
+     createdAt: notPersonal,
+   },
+ );
++
++const consentRetention = "account lifetime + 3 years";
++
++/** Append-only: the application only inserts rows (T3-AC-004). */
++export const consents = withDataMeta(
++  identitySchema.table(
++    "consent",
++    {
++      id: uuid("id").primaryKey(),
++      personId: uuid("person_id")
++        .notNull()
++        .references(() => persons.id),
++      purpose: text("purpose").notNull(),
++      textVersion: text("text_version").notNull(),
++      channel: text("channel", { enum: ["web", "advisor", "import"] }).notNull(),
++      granted: boolean("granted").notNull(),
++      decidedAt: timestamp("decided_at", { withTimezone: true }).notNull(),
++    },
++    (table) => [index("consent_person_purpose_idx").on(table.personId, table.purpose)],
++  ),
++  {
++    id: notPersonal,
++    personId: {
++      personal: true,
++      category: "identity",
++      purpose: "Link the consent decision to the person (proof of consent)",
++      owner: "identity",
++      retention: consentRetention,
++    },
++    purpose: notPersonal,
++    textVersion: notPersonal,
++    channel: {
++      personal: true,
++      category: "preference",
++      purpose: "Proof of consent: where the person gave or withdrew it",
++      owner: "identity",
++      retention: consentRetention,
++    },
++    granted: {
++      personal: true,
++      category: "preference",
++      purpose: "Proof of consent: the decision of the person",
++      owner: "identity",
++      retention: consentRetention,
++    },
++    decidedAt: {
++      personal: true,
++      category: "preference",
++      purpose: "Proof of consent: when the person decided",
++      owner: "identity",
++      retention: consentRetention,
++    },
++  },
++);
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..ab54f65 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,6 +1,28 @@
+ import { type Clock, type EventBus, newId, systemClock } from "../kernel";
++import {
++  CONSENT_CHANNELS,
++  type ConsentChanged,
++  type ConsentChannel,
++  type ConsentRecord,
++  type ConsentRepository,
++} from "./consent";
+ import type { Person, PersonRegistered, PersonRepository } from "./person";
+ 
++export interface RecordConsentInput {
++  personId: string;
++  purpose: string;
++  textVersion: string;
++  channel: ConsentChannel;
++  granted: boolean;
++}
++
++export class UnknownPersonError extends Error {
++  constructor() {
++    super("No person with this ID exists");
++    this.name = "UnknownPersonError";
++  }
++}
++
+ export interface RegisterPersonInput {
+   email: string;
+   givenName: string;
+@@ -17,11 +39,12 @@ export class EmailAlreadyRegisteredError extends Error {
+ 
+ export interface IdentityDeps {
+   repo: PersonRepository;
++  consents: ConsentRepository;
+   bus: EventBus;
+   clock?: Clock;
+ }
+ 
+-export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps) {
++export function createIdentity({ repo, consents, bus, clock = systemClock }: IdentityDeps) {
+   return {
+     /** One person record per e-mail address (T3-D-009). */
+     async registerPerson(input: RegisterPersonInput): Promise<Person> {
+@@ -51,6 +74,44 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+     async getPerson(id: string): Promise<Person | null> {
+       return repo.findById(id);
+     },
++
++    /** Adds a consent decision; earlier records stay unchanged (T3-AC-004). */
++    async recordConsent(input: RecordConsentInput): Promise<ConsentRecord> {
++      if (!CONSENT_CHANNELS.includes(input.channel)) {
++        throw new Error(`Unknown consent channel: ${input.channel}`);
++      }
++      if (!(await repo.findById(input.personId))) throw new UnknownPersonError();
++      const now = clock.now();
++      const record: ConsentRecord = {
++        id: newId(now),
++        personId: input.personId,
++        purpose: input.purpose,
++        textVersion: input.textVersion,
++        channel: input.channel,
++        granted: input.granted,
++        decidedAt: now.toISOString(),
++      };
++      await consents.append(record);
++      const event: ConsentChanged = {
++        type: "identity.consent-changed",
++        id: newId(now),
++        occurredAt: record.decidedAt,
++        payload: { consentId: record.id, personId: record.personId, purpose: record.purpose },
++      };
++      await bus.publish(event);
++      return record;
++    },
++
++    /** The latest decision of the person for the purpose, or `null`. */
++    async currentConsent(personId: string, purpose: string): Promise<ConsentRecord | null> {
++      const history = await consents.listByPerson(personId);
++      return history.filter((record) => record.purpose === purpose).at(-1) ?? null;
++    },
++
++    /** All decisions of the person, oldest first. */
++    async consentHistory(personId: string): Promise<ConsentRecord[]> {
++      return consents.listByPerson(personId);
++    },
+   };
+ }
+ 

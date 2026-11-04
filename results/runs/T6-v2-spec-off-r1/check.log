@@ -1,0 +1,57 @@
+
+===== typecheck: pass =====
+
+===== lint: FAIL =====
+
+packages/core/src/identity/service.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+      1   1 │   import { type Clock, type EventBus, newId, systemClock } from "../kernel";
+      2     │ - import·type·{
+      3     │ - ··ConsentChannel,
+      4     │ - ··ConsentRecord,
+      5     │ - ··ConsentRecorded,
+      6     │ - ··ConsentRepository,
+      7     │ - }·from·"./consent";
+          2 │ + import·type·{·ConsentChannel,·ConsentRecord,·ConsentRecorded,·ConsentRepository·}·from·"./consent";
+      8   3 │   import type { Person, PersonRegistered, PersonRepository } from "./person";
+      9   4 │   
+  
+
+Checked 51 files in 61ms. No fixes applied.
+Found 1 error.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T6-v2-spec-off-r1
+
+
+ Test Files  10 passed (10)
+      Tests  40 passed (40)
+   Start at  10:31:47
+   Duration  842ms (tests 37%, transform 32%, import 29%, worker 2%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (28 modules, 48 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 3 tables.
+
+===== ids: pass =====
+ID check passed: 388 references to 157 IDs, register v0.1.
+
+===== docs: pass =====
+Documentation check passed: 47 Markdown files.
+
+===== trace: pass =====
+T3-AC-003	packages/core/src/identity/identity.test.ts
+T3-AC-004	packages/core/src/identity/consent.test.ts

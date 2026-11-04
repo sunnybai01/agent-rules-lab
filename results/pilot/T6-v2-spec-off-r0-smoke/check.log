@@ -1,0 +1,33 @@
+
+===== typecheck: pass =====
+
+===== lint: pass =====
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T6-v2-spec-off-r0
+
+
+ Test Files  10 passed (10)
+      Tests  41 passed (41)
+   Start at  09:46:46
+   Duration  852ms (tests 45%, import 33%, transform 20%, worker 2%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (28 modules, 48 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 3 tables.
+
+===== ids: pass =====
+ID check passed: 400 references to 158 IDs, register v0.1.
+
+===== docs: pass =====
+Documentation check passed: 48 Markdown files.
+
+===== trace: pass =====
+T3-AC-003	packages/core/src/identity/identity.test.ts
+T3-AC-004	packages/core/src/identity/consent.test.ts

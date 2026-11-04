@@ -1,0 +1,160 @@
+{
+  "runId": "T2-v21-direct-off-r2",
+  "task": "T2",
+  "layout": "v21",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 2,
+  "model": "claude-opus-5-5",
+  "startedAt": "2026-11-04T03:34:58.988Z",
+  "wallMs": 339642,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true,
+    "ids": true,
+    "docs": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "returns the advisor B20001 with source version and read time",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null for an unknown advisor",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "identity does not import the ERP port or an adapter",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "the ERP outage surfaces as an error, not as null",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the advisor contract is a Zod schema in erp-port",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "docs/adr/0017-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "docs/changes/CR-001-synchronous-advisor-read.md",
+    "docs/specs/draft-advisor-master-data/spec.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/identity/advisor.ts",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/core/src/integration/index.ts",
+    "packages/core/src/integration/integration.test.ts",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-fake/src/erp-fake.test.ts",
+    "packages/erp-fake/src/index.ts",
+    "packages/erp-port/AGENTS.md",
+    "packages/erp-port/src/index.ts"
+  ],
+  "docsChanged": [
+    "docs/adr/0017-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "docs/changes/CR-001-synchronous-advisor-read.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-port/AGENTS.md"
+  ],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 1.8115106,
+  "agentMs": 332687,
+  "turns": 72,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "Ignoring 7 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T2-v21-direct-off-r2\"].hasTrustDialogAccepted: true in /Users/57block/.claude.json.\n",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 1.8115106,
+      "durationMs": 332687,
+      "turns": 72,
+      "usage": {
+        "input_tokens": 60,
+        "cache_creation_input_tokens": 74250,
+        "cache_read_input_tokens": 1705610,
+        "output_tokens": 23838,
+        "output_tokens_details": {
+          "thinking_tokens": 2233
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 74250,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1325,
+            "cache_read_input_tokens": 84469,
+            "cache_creation_input_tokens": 2397,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 2397
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "y call. Discovery (T2 section 4) allows live ERP calls only for payment options, vouchers and order history; everything else must be asynchronous. T3-D-007 also says ERP data is read from a copy kept in the platform's database. The reviewer subagent caught this and I checked it against the requirements text. I built the live read you asked for and wrote the conflict down in a change record (CR-001) rather than redesigning on my own. The decision has two options:\n1. Accept the live read as an exception and take it through Provital's change control.\n2. Keep the same `getAdvisor` signature but have it read from a stored copy of the advisors, filled by the ERP's inbound advisor data flow (T2-C-010).\n\n**What changed**\n- **ERP port:** a new operation `readAdvisor(advisorNumber)` with a payload contract: advisor number (`B` and 5 digits), given name, family name, e-mail, active flag, version.\n- **Fake ERP:** advisor `B20001`, Bianca Beraterin, `bianca.beraterin@example.test`, active. It is the advisor already linked to fake customer `K100001`. The outage simulation covers the new read too.\n- **Integration module:** `readAdvisor`, which records the source, version and read time, like the existing customer read.\n- **Identity module:** `getAdvisor(advisorNumber)` returns the fields you listed, or `null` for an unknown advisor. Identity now receives the integration service as a dependency; this is the direction the architecture document already describes. When the ERP is down, the error reaches the caller rather than turning into `null`. Nothing is stored.\n- **Worker:** `createApp()` wires it up. Tests cover the known advisor, an unknown one and an ERP outage.\n- **Docs:** the four module `AGENTS.md` files, ADR-0017 (status Proposed), a draft spec in `docs/specs/draft-advisor-master-data/spec.md`, and CR-001.\n\n**Still needed from a person**\n- **Jira key:** create the story, then move the spec folder to `docs/specs/AN-<n>/` and replace the key placeholder in the PR title and body.\n- **Approval:** a second person approves the spec and ADR-0017 and decides CR-001. Until then the PR check fails, because it requires an approved spec.\n- **Acceptance criterion:** the requirements have no acceptance criterion for this, so no test title carries one. If one is assigned, rename the new tests to start with it.\n- **ADR deciders:** fill in the real names; I left placeholders.\n\nNothing is committed. The PR title is `feat: read advisor master data from the ERP in identity (AN-<n>)`. The body, following the template:\n\n```markdown\nSpec: docs/specs/AN-<n>/spec.md\nRefs: AN-<n>\nCovered: none\n\n## Verification\n- pnpm check: passed (typecheck, lint, 42 tests, arch, pii, ids, docs)\n- reviewer subagent: one finding (live ERP read contradicts T2 section 4 / T3-D-007) → recorded as CR-001, spec gate trigger 5; minor findings fixed\n\n## Deviations from spec\nNone. Open: CR-001 (live read or read copy), AC ID to be named.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n```",
+      "toolCalls": {
+        "Bash": 23,
+        "Grep": 7,
+        "Edit": 37,
+        "Read": 28,
+        "Write": 4,
+        "Agent": 1,
+        "Glob": 2
+      },
+      "docsRead": [
+        "docs/adr/0016-documentation-architecture.md",
+        "docs/specs/draft-advisor-master-data/spec.md",
+        "docs/adr/0017-erp-advisor-master-data-read.md",
+        "docs/conventions/erp.md",
+        "docs/adr/README.md",
+        "docs/conventions/data.md",
+        "docs/specs/_template/spec.md",
+        "docs/architecture.md",
+        "docs/discovery-baseline.md",
+        "docs/adr/0000-template.md"
+      ],
+      "filesReadCount": 22
+    }
+  ]
+}

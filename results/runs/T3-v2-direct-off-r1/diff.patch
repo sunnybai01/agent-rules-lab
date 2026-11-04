@@ -1,0 +1,252 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..8ea8724 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -20,11 +20,9 @@ export function createApp(options: AppOptions = {}) {
+     bus,
+     clock,
+   });
+-  const journeyApi = journey.createJourney({
+-    repo: new journey.InMemoryTaskRepository(),
+-    bus,
+-    clock,
+-  });
++  const journeyDeps = { repo: new journey.InMemoryTaskRepository(), bus, clock };
++  const journeyApi = journey.createJourney(journeyDeps);
++  journey.registerJourneySubscriptions(bus, journeyDeps);
+   return { bus, clock, integration: integrationApi, identity: identityApi, journey: journeyApi };
+ }
+ 
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..b8797d8 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -1,3 +1,4 @@
++import { kernel } from "@provital/core";
+ import { describe, expect, it } from "vitest";
+ import { createApp } from "./index";
+ 
+@@ -11,4 +12,21 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("creates a welcome call task for a new person", async () => {
++    const app = createApp({ clock: kernel.fixedClock("2027-01-05T08:00:00Z") });
++    const person = await app.identity.registerPerson({
++      email: "c@example.test",
++      givenName: "C",
++      familyName: "D",
++    });
++    const tasks = await app.journey.listTasks(person.id);
++    expect(tasks).toHaveLength(1);
++    expect(tasks[0]).toMatchObject({
++      personId: person.id,
++      kind: "welcome-call",
++      title: "Welcome call",
++      dueDate: "2027-01-05",
++    });
++  });
+ });
+diff --git a/docs/specs/draft-welcome-call/plan.md b/docs/specs/draft-welcome-call/plan.md
+new file mode 100644
+index 0000000..bb60d36
+--- /dev/null
++++ b/docs/specs/draft-welcome-call/plan.md
+@@ -0,0 +1,10 @@
++# draft-welcome-call: plan
++
++Each step is small and ends with passing tests. Mark a step `[x]` when it is done, in the same commit.
++
++- [x] 1. Tests for the handler: due on the business date of the registration (winter and summer time), idempotent → `journey/subscriptions.ts`, export from `journey/index.ts`
++- [x] 2. Test with `createApp()`: `registerPerson` then `listTasks` shows the task → call `registerJourneySubscriptions` in `apps/worker/src/index.ts`
++- [x] 3. Update `journey/AGENTS.md`. Run `/review`, then `pnpm check`.
++
++## Handoff
++
+diff --git a/docs/specs/draft-welcome-call/spec.md b/docs/specs/draft-welcome-call/spec.md
+new file mode 100644
+index 0000000..d082cc2
+--- /dev/null
++++ b/docs/specs/draft-welcome-call/spec.md
+@@ -0,0 +1,48 @@
++# draft-welcome-call: Create a welcome call task when a person registers
++
++- **Jira:** none yet
++- **Gate:** normal
++- **Status:** Draft
++- **Approved-by:**
++- **Baseline:** Discovery v0.1
++- **Module:** journey. Touches: identity through the event `identity.person-registered` (consumed, unchanged); apps/worker registers the subscription
++
++## Context
++
++When a person registers, the advisor must call them. Journey creates a welcome call task for each new person so that it appears in the task list.
++
++## Acceptance criteria
++
++No Discovery AC covers this rule yet. The tests have no AC ID in their titles. A person assigns the AC ID with the Jira key.
++
++| ID | Test |
++|---|---|
++| none | `packages/core/src/journey/journey.test.ts`, `apps/worker/src/worker.test.ts` |
++
++## Design increment
++
++- **Module file:** journey: public API `registerJourneySubscriptions(bus, { repo, bus, clock })` and `WELCOME_CALL_KIND`; Events: consumes `identity.person-registered`; invariant: one `welcome-call` task per person.
++- **Contracts:** none new. Consumes `identity.person-registered` (`personId`, `brand`) as it is.
++- **Schema:** none. The task row uses the existing columns of `journey.task`.
++
++## Local decisions
++
++- Task: kind `welcome-call`, title `Welcome call`, due date `businessDate(event.occurredAt)`. The registration time, not the handling time, so a late delivery from the queue keeps the date.
++- Idempotency: the handler skips the person when a `welcome-call` task exists. A unique index on (`person_id`, `kind`) for this kind is for the Drizzle repository.
++- The new import journey → identity is a type import of the event, through `identity/index.ts`, in the direction the event conventions give (the reacting module imports the emitting one). No cycle.
++- A fixed handler, not the configurable journey engine (A4-C-001): the engine does not exist yet.
++
++## Out of scope
++
++- The journey engine, task reasons, step lists and escalation.
++- Assigning the task to a specific advisor.
++
++## Open questions
++
++- Should the welcome call later become a configured journey with trigger "days after registration" (0 days)?
++- The task has no reason and no step list yet, which A4-AC-002 asks of every task. Is that acceptable until the task list story? If not, this story contradicts A4-AC-002 and becomes a design story (trigger 5).
++- Idempotency is check-then-write. The Drizzle repository needs a unique index on (`person_id`, `kind`) for `welcome-call` so that two parallel deliveries cannot both write.
++
++## Deviations
++
++None.
+diff --git a/packages/core/src/journey/AGENTS.md b/packages/core/src/journey/AGENTS.md
+index d2d3021..27a7e1f 100644
+--- a/packages/core/src/journey/AGENTS.md
++++ b/packages/core/src/journey/AGENTS.md
+@@ -11,6 +11,8 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ | `createJourney({ repo, bus, clock })` | Builds the module service |
+ | `.createTask({ personId, kind, title, dueDate? })` | Creates a task. `dueDate` defaults to today's business date |
+ | `.listTasks(personId)` | Lists the tasks of a person |
++| `registerJourneySubscriptions(bus, { repo, bus, clock })` | Subscribes the handlers below. The composition root calls it |
++| `WELCOME_CALL_KIND` | `"welcome-call"`, the kind of the welcome call task |
+ | `InMemoryTaskRepository` | Store for tests and the fixture |
+ | `Journey`, `JourneyDeps`, `CreateTaskInput` | Types of the service |
+ | `Task`, `TaskRepository` | Types of the record and the store |
+@@ -23,11 +25,16 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ 
+ ## Events <!-- verified: events -->
+ 
+-None yet. Journey reacts to events of other modules; register the handlers in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++Journey reacts to events of other modules; the handlers are in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++
++| Event | Direction | Reaction |
++|---|---|---|
++| `identity.person-registered` | Consumes | Creates the task `welcome-call`, "Welcome call", due on the business date of `occurredAt` |
+ 
+ ## Invariants
+ 
+ - A task never copies personal data from `identity`. It stores the `personId`.
++- One `welcome-call` task per person. A second delivery of the same event creates nothing.
+ 
+ ## Acceptance criteria
+ 
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..37b8e90 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,5 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+ export { createJourney } from "./service";
++export { registerJourneySubscriptions, WELCOME_CALL_KIND } from "./subscriptions";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/journey.test.ts b/packages/core/src/journey/journey.test.ts
+index 322282c..1a540ab 100644
+--- a/packages/core/src/journey/journey.test.ts
++++ b/packages/core/src/journey/journey.test.ts
+@@ -1,6 +1,7 @@
+ import { describe, expect, it } from "vitest";
++import type { PersonRegistered } from "../identity";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createJourney, InMemoryTaskRepository } from "./index";
++import { createJourney, InMemoryTaskRepository, registerJourneySubscriptions } from "./index";
+ 
+ describe("journey", () => {
+   it("creates a task due today by default", async () => {
+@@ -14,3 +15,47 @@ describe("journey", () => {
+     expect(await journey.listTasks("p1")).toEqual([task]);
+   });
+ });
++
++describe("journey subscriptions", () => {
++  const registered = (occurredAt: string): PersonRegistered => ({
++    type: "identity.person-registered",
++    id: "e1",
++    occurredAt,
++    payload: { personId: "p1", brand: "provital" },
++  });
++
++  function setup(now: string) {
++    const bus = new InMemoryEventBus();
++    const repo = new InMemoryTaskRepository();
++    const clock = fixedClock(now);
++    registerJourneySubscriptions(bus, { repo, bus, clock });
++    return { bus, journey: createJourney({ repo, bus, clock }) };
++  }
++
++  it("creates a welcome call due on the business date of the registration", async () => {
++    // Registered at 00:30 in Berlin on 5 January; handled a day later.
++    const { bus, journey } = setup("2027-01-06T10:00:00Z");
++    await bus.publish(registered("2027-01-04T23:30:00Z"));
++    const tasks = await journey.listTasks("p1");
++    expect(tasks).toHaveLength(1);
++    expect(tasks[0]).toMatchObject({
++      personId: "p1",
++      kind: "welcome-call",
++      title: "Welcome call",
++      dueDate: "2027-01-05",
++    });
++  });
++
++  it("uses the summer time offset for the business date", async () => {
++    const { bus, journey } = setup("2027-07-01T10:00:00Z");
++    await bus.publish(registered("2027-06-30T22:15:00Z"));
++    expect((await journey.listTasks("p1"))[0]?.dueDate).toBe("2027-07-01");
++  });
++
++  it("creates one welcome call when the event comes twice", async () => {
++    const { bus, journey } = setup("2027-01-06T10:00:00Z");
++    await bus.publish(registered("2027-01-05T08:00:00Z"));
++    await bus.publish(registered("2027-01-05T08:00:00Z"));
++    expect(await journey.listTasks("p1")).toHaveLength(1);
++  });
++});
+diff --git a/packages/core/src/journey/subscriptions.ts b/packages/core/src/journey/subscriptions.ts
+new file mode 100644
+index 0000000..63d5e22
+--- /dev/null
++++ b/packages/core/src/journey/subscriptions.ts
+@@ -0,0 +1,24 @@
++import type { PersonRegistered } from "../identity";
++import { businessDate, type EventBus } from "../kernel";
++import { createJourney, type JourneyDeps } from "./service";
++
++export const WELCOME_CALL_KIND = "welcome-call";
++
++/** The handlers of journey for the events of other modules. The composition root calls this. */
++export function registerJourneySubscriptions(bus: EventBus, deps: JourneyDeps): void {
++  const journey = createJourney(deps);
++
++  // The advisor calls each new person. Due on the business date of the registration,
++  // not of the handling. Idempotent: one welcome call per person.
++  bus.subscribe<PersonRegistered>("identity.person-registered", async (event) => {
++    const { personId } = event.payload;
++    const tasks = await journey.listTasks(personId);
++    if (tasks.some((t) => t.kind === WELCOME_CALL_KIND)) return;
++    await journey.createTask({
++      personId,
++      kind: WELCOME_CALL_KIND,
++      title: "Welcome call",
++      dueDate: businessDate(new Date(event.occurredAt)),
++    });
++  });
++}

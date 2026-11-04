@@ -1,0 +1,157 @@
+{
+  "runId": "T2-v2-direct-off-r2",
+  "task": "T2",
+  "layout": "v2",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 2,
+  "model": "claude-opus-5-5",
+  "startedAt": "2026-11-04T02:32:30.676Z",
+  "wallMs": 294334,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true,
+    "ids": true,
+    "docs": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "returns the advisor B20001 with source version and read time",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null for an unknown advisor",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "identity does not import the ERP port or an adapter",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "the ERP outage surfaces as an error, not as null",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the advisor contract is a Zod schema in erp-port",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "docs/adr/0017-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "docs/specs/draft-advisor-master-data/plan.md",
+    "docs/specs/draft-advisor-master-data/spec.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/core/src/integration/index.ts",
+    "packages/core/src/integration/integration.test.ts",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-fake/src/erp-fake.test.ts",
+    "packages/erp-fake/src/index.ts",
+    "packages/erp-port/AGENTS.md",
+    "packages/erp-port/src/index.ts"
+  ],
+  "docsChanged": [
+    "docs/adr/0017-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-port/AGENTS.md"
+  ],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 1.4443772000000006,
+  "agentMs": 286084,
+  "turns": 79,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "Ignoring 7 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T2-v2-direct-off-r2\"].hasTrustDialogAccepted: true in /Users/57block/.claude.json.\n",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 1.4443772000000006,
+      "durationMs": 286084,
+      "turns": 79,
+      "usage": {
+        "input_tokens": 56,
+        "cache_creation_input_tokens": 63619,
+        "cache_read_input_tokens": 1361280,
+        "output_tokens": 23248,
+        "output_tokens_details": {
+          "thinking_tokens": 2073
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 63619,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1326,
+            "cache_read_input_tokens": 75831,
+            "cache_creation_input_tokens": 404,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 404
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "I've added `getAdvisor`, but it isn't on a branch or committed yet because git commands were blocked in this session. Everything is in the working tree on `main`. `pnpm check` passes (typecheck, lint, 42 tests, arch, pii, ids, docs).\n\n**What changed**\n- **ERP port** (`packages/erp-port/src/index.ts`): a new `AdvisorMasterData` contract (advisor number `B` + 5 digits, given name, family name, e-mail, active flag, source version) and a new port operation `readAdvisor`.\n- **Fake ERP**: a fake advisor `B20001` (Clara Beispiel, `clara.beispiel@example.test`, active). She is the advisor the existing fake customer `K100001` already points to. The fake can also simulate the ERP being down.\n- **Integration**: `readAdvisor(advisorNumber)` returns the data with its source, version and read time, or `null`.\n- **Identity**: `getAdvisor(advisorNumber)` returns the record you specified, or `null`. It reads the ERP on every call and stores nothing. If the ERP is down, the error goes to the caller.\n- **Worker**: `createApp()` passes integration to identity, so `app.identity.getAdvisor` works.\n- **Docs**: ADR-0017 (`docs/adr/0017-erp-advisor-master-data-read.md`) records the decision. The spec and plan are in `docs/specs/draft-advisor-master-data/`, and the module `AGENTS.md` files are updated.\n\n**Things to know**\n- **Breaking change:** `createIdentity` now requires an `integration` dependency. The worker is the only caller and it is updated.\n- **No acceptance criterion:** the Discovery register has none for advisor master data. I cited the capability T2-C-010 (\"Customer and advisor master data\") and the read-metadata rule T2-D-009. The test titles start with these IDs, but `pnpm trace` only counts acceptance-criterion IDs, so the PR will say `Covered: none`.\n- **Review:** the reviewer subagent asked for ID prefixes on the test titles and a test for an ERP outage; both are done. It also asked to add T2-C-010 to identity's list of acceptance criteria. I didn't, because capabilities like T2-C-010 are cited, not owned by a module.\n\n**What a person still has to do**\n1. **Get a Jira key.** Then rename `docs/specs/draft-advisor-master-data/` to `docs/specs/AN-<n>/` and update the header.\n2. **Get a second person's approval.** Adding an ERP port operation makes this a design story. They need to set `Approved-by` in the spec, mark ADR-0017 `Accepted` and name its deciders. `pnpm prcheck` blocks the merge until then.\n3. **Branch, commit, push and open the PR.** Suggested title: `feat: read advisor master data from the ERP (AN-<n>)`. Body, following the template:\n   ```\n   Spec: docs/specs/AN-<n>/spec.md\n   Refs: AN-<n>\n   Covered: none\n\n   ## Verification\n   - pnpm check: passed (42 tests, arch, pii, ids, docs)\n\n   ## Deviations from spec\n   None.\n   ```",
+      "toolCalls": {
+        "Bash": 12,
+        "Read": 27,
+        "Grep": 8,
+        "Glob": 1,
+        "Edit": 33,
+        "Write": 3,
+        "Agent": 1
+      },
+      "docsRead": [
+        "packages/core/src/identity/AGENTS.md",
+        "packages/core/src/integration/AGENTS.md",
+        "docs/conventions/erp.md",
+        "docs/specs/_template/spec.md",
+        "docs/adr/0000-template.md",
+        "docs/adr/README.md",
+        "docs/specs/README.md",
+        ".github/pull_request_template.md",
+        "docs/specs/_template/plan.md"
+      ],
+      "filesReadCount": 23
+    }
+  ]
+}

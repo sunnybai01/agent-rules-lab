@@ -1,0 +1,191 @@
+diff --git a/docs/adr/0017-journey-reacts-to-identity-events.md b/docs/adr/0017-journey-reacts-to-identity-events.md
+new file mode 100644
+index 0000000..4a684fc
+--- /dev/null
++++ b/docs/adr/0017-journey-reacts-to-identity-events.md
+@@ -0,0 +1,28 @@
++# ADR-0017: Journey reacts to identity events
++
++- **Status:** Proposed
++- **Date:** 2026-11-04
++- **Deciders:** lab-approver
++- **Sources:** AN-903, [architecture.md](../architecture.md) section 4 rule 4, [event conventions](../conventions/events.md)
++
++## Context
++
++When a person registers, the advisor must call them, and the call must show in the person's task list (AN-903). The task list belongs to `journey`; the registration belongs to `identity`, which publishes `identity.person-registered` with `personId` and `brand`. Until now `journey` depended on no domain module, only on `kernel`. Architecture section 4 names order, invoice and payment events as journey's inputs from the ERP; it says nothing about events of other modules. Architecture rule 4 requires reactions across modules to run through events, and the handler must be idempotent.
++
++## Options
++
++1. **Journey subscribes to `identity.person-registered`.** Journey imports the event type through `identity/index.ts` and registers a handler in `journey/subscriptions.ts`. Good: follows rule 4 and the event conventions; identity does not know journey. Bad: a new dependency journey → identity.
++2. **Identity calls `journey.createTask` after the registration.** Good: no subscription. Bad: a module writes into another module (rule 4); adds the dependency identity → journey.
++3. **The worker creates the task in its composition code.** Good: no module dependency. Bad: domain logic in the composition root; no retry through the queue.
++
++## Decision
++
++We choose option 1. It is the pattern the event conventions describe, and the dependency is a type import only, through the public API. Identity does not import journey, so there is no cycle. The handler is idempotent: it looks up an existing `welcome-call` task of the person before it creates one.
++
++## Consequences
++
++- Journey may import types from `identity/index.ts`. Identity must never import journey; `pnpm arch` fails on the cycle.
++- `apps/worker` calls `journey.registerJourneySubscriptions(bus, { journey })`.
++- The architecture table in section 4 is unchanged: its column lists the ERP inputs, not events between modules.
++- Harder: without a unique index on `(person_id, kind)`, idempotency rests on the lookup. The PostgreSQL repository adds the index when it is built.
++- Tests: `packages/core/src/journey/journey.test.ts`, `apps/worker/src/worker.test.ts`.
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 042774e..a1bfa6d 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -4,7 +4,7 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ 
+ ## How to write an ADR
+ 
+-1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0017.** Then change this line.
++1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0018.** Then change this line.
+ 2. Numbers 0001 to 0014 are reserved for the ADRs under review (technical-decisions.md section 4). Do not use them for a new ADR.
+ 3. Fill every section. Cite Discovery IDs that `pnpm ids show` knows, and TD numbers. At most 80 lines.
+ 4. Set the status to `Proposed`. A second person sets it to `Accepted`. After that, the ADR is not changed: a new ADR supersedes it.
+@@ -17,3 +17,4 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ | 0002–0014 | Under review, not in this repository yet | — |
+ | [0015](0015-ai-development-workflow.md) | AI development workflow | Proposed |
+ | [0016](0016-documentation-architecture.md) | Documentation architecture | Proposed |
++| [0017](0017-journey-reacts-to-identity-events.md) | Journey reacts to identity events | Proposed |
+diff --git a/docs/specs/AN-903/plan.md b/docs/specs/AN-903/plan.md
+new file mode 100644
+index 0000000..10c1681
+--- /dev/null
++++ b/docs/specs/AN-903/plan.md
+@@ -0,0 +1,20 @@
++# AN-903: plan
++
++Each step is small and ends with passing tests. Mark a step `[x]` when it is done, in the same commit.
++
++- [ ] 1. Write ADR-0017 "Journey reacts to identity events" (Status `Proposed`), add it to the index, bump the next free number to 0018. The approver accepts it with the spec. (files: `docs/adr/0017-journey-reacts-to-identity-events.md`, `docs/adr/README.md`)
++- [ ] 2. Test: `InMemoryTaskRepository.findByPersonAndKind` returns the task of that person and kind, or `null` → add the method to `TaskRepository` and the in-memory store. (files: `packages/core/src/journey/journey.test.ts`, `packages/core/src/journey/task.ts`)
++- [ ] 3. Test: publishing `identity.person-registered` on an `InMemoryEventBus` after `registerJourneySubscriptions` creates one task `welcome-call` / `Welcome call` due on the Berlin business date of `occurredAt` (include a case near midnight UTC, e.g. `2026-11-04T23:30:00Z` → `2026-11-05`) → write `subscriptions.ts`, export `registerJourneySubscriptions` and `JourneySubscriptionDeps` from `index.ts`. (files: `packages/core/src/journey/journey.test.ts`, `packages/core/src/journey/subscriptions.ts`, `packages/core/src/journey/index.ts`)
++- [ ] 4. Test: the same event delivered twice gives one welcome task. (files: `packages/core/src/journey/journey.test.ts`, `packages/core/src/journey/subscriptions.ts`)
++- [ ] 5. Test: in `createApp()` with a fixed clock, after `app.identity.registerPerson(...)` (`@example.test` e-mail), `app.journey.listTasks(person.id)` shows the welcome task → call `registerJourneySubscriptions` in the worker. (files: `apps/worker/src/worker.test.ts`, `apps/worker/src/index.ts`)
++- [ ] 6. Update `journey/AGENTS.md` (public API, events, invariants), `identity/AGENTS.md` (consumer of `identity.person-registered`), and the architecture table row for journey if the ADR says so. Run `/review`, then `pnpm check`.
++
++## Handoff
++
++- **Stopped:** 2026-11-04. That session could not run shell commands, so nothing was run, nothing was committed, and no step is marked `[x]`.
++- **Step 1:** ADR-0017 and the index row are written, uncommitted. The ADR is `Proposed` and waits for lab-approver to accept it.
++- **Step 2:** the test and `findByPersonAndKind` are written, but not run.
++- **Step 3: blocked on a design question.** The spec says the handler calls `repo.findByPersonAndKind`. It also fixes `JourneySubscriptionDeps` as `{ journey: Journey }` and keeps the method off the service API. So the handler cannot reach the repository. The approver must choose before step 3:
++  - (a) `JourneySubscriptionDeps = { journey: Journey; repo: TaskRepository }`, with the worker passing the repo it builds. Proposed.
++  - (b) Keep `{ journey }` and check `journey.listTasks(personId)` for `kind === "welcome-call"`, which makes `findByPersonAndKind` unnecessary.
++- **Next:** run `pnpm test` to see step 2 pass, then commit steps 1–2. After the approver answers, run `/implement AN-903`.
+diff --git a/docs/specs/AN-903/spec.md b/docs/specs/AN-903/spec.md
+new file mode 100644
+index 0000000..1c2f484
+--- /dev/null
++++ b/docs/specs/AN-903/spec.md
+@@ -0,0 +1,64 @@
++# AN-903: Welcome task for each new person
++
++- **Jira:** AN-903
++- **Gate:** design (trigger 1)
++- **Status:** Approved
++- **Approved-by:** lab-approver 2026-11-04
++- **Baseline:** Discovery v0.1
++- **Module:** journey. Touches: identity through its existing event `identity.person-registered` (subscribe only); `apps/worker` registers the subscription
++
++## Context
++
++When a person registers, the advisor must call them. Journey creates a welcome task for each new person, so the call shows in the person's task list. Discovery items served: none found (no Discovery ID covers the welcome call).
++
++## Acceptance criteria
++
++None. The story has no AC IDs. The tests are named after the story behaviour until a person adds an AC ID (see Open questions).
++
++| ID | Test |
++|---|---|
++| None | `packages/core/src/journey/journey.test.ts`, `apps/worker/src/worker.test.ts` |
++
++## Design increment
++
++- **Gate reason (trigger 1):** journey reacts to an identity event for the first time. This adds the dependency journey → identity (type import of `PersonRegistered` through `identity/index.ts`). Architecture section 4 lists journey's inputs as order, invoice and payment events only. ADR-0017 records the new direction. identity does not import journey, so there is no cycle.
++- **Module file (`journey/AGENTS.md`):**
++  - Public API, new row: `registerJourneySubscriptions(bus, { journey })` — subscribes journey's handlers to the bus. Called by `apps/worker`.
++  - Public API, new type: `JourneySubscriptionDeps` (`{ journey: Journey }`).
++  - `TaskRepository` gains `findByPersonAndKind(personId, kind): Promise<Task | null>`; `InMemoryTaskRepository` implements it.
++  - Events: `identity.person-registered` | Consumes | `personId`, `brand` → creates the welcome task.
++  - Invariants, new: "Each registered person has exactly one `welcome-call` task, due on the business date of the registration. Delivering the event twice creates no second task."
++- **Module file (`identity/AGENTS.md`):** Events row for `identity.person-registered` names journey as a consumer. No change to the contract.
++- **Worker (`apps/worker/AGENTS.md`, `src/index.ts`):** `createApp()` calls `journey.registerJourneySubscriptions(bus, { journey: journeyApi })`. Public API unchanged.
++- **Handler:** on `identity.person-registered`:
++  1. If `repo.findByPersonAndKind(personId, "welcome-call")` returns a task, do nothing.
++  2. Otherwise create the task: `kind: "welcome-call"`, `title: "Welcome call"`, `dueDate: businessDate(new Date(event.occurredAt))`.
++- **Contracts:** none new or changed. `identity.person-registered` (payload `personId`, `brand`) is used as it is.
++- **Schema:** none. `journey.task` keeps its columns; the task stores `personId` only.
++
++## Local decisions
++
++- The due date comes from the event's `occurredAt`, not from the clock at handling time: with a real queue the handler can run after midnight, and the story says "the business date of the registration".
++- Idempotency by a lookup on person and kind: one registration per person (one person per e-mail), so one welcome task per person is the rule.
++- The handler creates the task through the journey service (`createTask`), so the task has the same shape as any other task. `findByPersonAndKind` is added on the repository, not on the public service API.
++- The task is created for every brand; the story names no brand filter.
++- Open question "AC ID" (approver's rule: conventions, else the spec's option): the conventions require an AC ID only for a test that covers an acceptance criterion, and none exists. The test titles start with `AN-903:` until the PO adds an AC ID; no ID is invented.
++- Open question "ADR-0017 approval" (same rule): the ADR conventions say a second person sets `Accepted`. ADR-0017 is written as `Proposed`; lab-approver accepts it.
++- ADR-0017: the architecture table in section 4 stays unchanged. Its journey column lists the ERP inputs ("Reads from the ERP"), not events between modules.
++
++## Out of scope
++
++- Assigning the task to a specific advisor (no advisor field on the task yet).
++- A unique index on `(person_id, kind)` in PostgreSQL; there is no PostgreSQL repository yet.
++- A `journey.task-created` event.
++
++## Open questions
++
++**Answers of the approver (lab-approver, a person):** for each question, take the option that follows the conventions in `docs/conventions/` and the module files. Where they say nothing, take the option that this spec proposes. Record each answer under "Local decisions" when you implement.
++
++- **AC ID.** The story has no acceptance criterion. Should the PO add one in Jira and in the Discovery register so the tests carry it (hard rule 5)? Until then the test titles start with `AN-903:`.
++- **ADR-0017 approval.** The new dependency journey → identity needs ADR-0017 (Proposed) accepted with this spec.
++
++## Deviations
++
++None.
+diff --git a/packages/core/src/journey/journey.test.ts b/packages/core/src/journey/journey.test.ts
+index 322282c..22d4e2a 100644
+--- a/packages/core/src/journey/journey.test.ts
++++ b/packages/core/src/journey/journey.test.ts
+@@ -13,4 +13,17 @@ describe("journey", () => {
+     expect(task.dueDate).toBe("2027-01-05");
+     expect(await journey.listTasks("p1")).toEqual([task]);
+   });
++
++  it("AN-903: finds the task of a person and kind, or null", async () => {
++    const repo = new InMemoryTaskRepository();
++    const journey = createJourney({
++      repo,
++      bus: new InMemoryEventBus(),
++      clock: fixedClock("2027-01-05T08:00:00Z"),
++    });
++    const call = await journey.createTask({ personId: "p1", kind: "call", title: "Call" });
++    await journey.createTask({ personId: "p2", kind: "welcome-call", title: "Welcome call" });
++    expect(await repo.findByPersonAndKind("p1", "call")).toEqual(call);
++    expect(await repo.findByPersonAndKind("p1", "welcome-call")).toBeNull();
++  });
+ });
+diff --git a/packages/core/src/journey/task.ts b/packages/core/src/journey/task.ts
+index b50d2fd..dd76b55 100644
+--- a/packages/core/src/journey/task.ts
++++ b/packages/core/src/journey/task.ts
+@@ -11,6 +11,7 @@ export interface Task {
+ export interface TaskRepository {
+   insert(task: Task): Promise<void>;
+   listByPerson(personId: string): Promise<Task[]>;
++  findByPersonAndKind(personId: string, kind: string): Promise<Task | null>;
+ }
+ 
+ export class InMemoryTaskRepository implements TaskRepository {
+@@ -23,4 +24,8 @@ export class InMemoryTaskRepository implements TaskRepository {
+   async listByPerson(personId: string): Promise<Task[]> {
+     return this.rows.filter((t) => t.personId === personId);
+   }
++
++  async findByPersonAndKind(personId: string, kind: string): Promise<Task | null> {
++    return this.rows.find((t) => t.personId === personId && t.kind === kind) ?? null;
++  }
+ }

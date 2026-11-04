@@ -1,0 +1,230 @@
+{
+  "runId": "T2-v2-spec-off-r2",
+  "task": "T2",
+  "layout": "v2",
+  "workflow": "spec",
+  "feedback": "off",
+  "repeat": 2,
+  "model": "claude-opus-5-5",
+  "startedAt": "2026-11-04T02:36:10.182Z",
+  "wallMs": 387152,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true,
+    "ids": true,
+    "docs": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "returns the advisor B20001 with source version and read time",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null for an unknown advisor",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "identity does not import the ERP port or an adapter",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "the ERP outage surfaces as an error, not as null",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the advisor contract is a Zod schema in erp-port",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "docs/adr/0017-erp-read-advisor.md",
+    "docs/adr/README.md",
+    "docs/specs/AN-902/plan.md",
+    "docs/specs/AN-902/spec.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/core/src/integration/index.ts",
+    "packages/core/src/integration/integration.test.ts",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-fake/src/erp-fake.test.ts",
+    "packages/erp-fake/src/index.ts",
+    "packages/erp-port/AGENTS.md",
+    "packages/erp-port/src/index.ts"
+  ],
+  "docsChanged": [
+    "docs/adr/0017-erp-read-advisor.md",
+    "docs/adr/README.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-port/AGENTS.md"
+  ],
+  "gate": {
+    "gate": "auto",
+    "specWritten": true,
+    "waitedMs": 1,
+    "editedByPerson": false
+  },
+  "humanInterventions": 1,
+  "costUsd": 2.0547725999999997,
+  "agentMs": 377888,
+  "turns": 118,
+  "phases": [
+    {
+      "phase": "spec",
+      "code": 0,
+      "stderr": "Ignoring 7 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T2-v2-spec-off-r2\"].hasTrustDialogAccepted: true in /Users/57block/.claude.json.\n",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 0.6598833999999999,
+      "durationMs": 97212,
+      "turns": 34,
+      "usage": {
+        "input_tokens": 32,
+        "cache_creation_input_tokens": 41931,
+        "cache_read_input_tokens": 574537,
+        "output_tokens": 10470,
+        "output_tokens_details": {
+          "thinking_tokens": 2672
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 41931,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1033,
+            "cache_read_input_tokens": 49939,
+            "cache_creation_input_tokens": 4608,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 4608
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "I've written the spec and plan for AN-902 and stopped there. This is a design story, so no code has been written yet. That means the change isn't ready for a pull request yet, as you asked: a second person has to approve the spec first.\n\n**Gate: design (trigger 2).** The story adds a new ERP port operation, `readAdvisor`, with a new payload contract, `AdvisorMasterData`. That needs an ADR, which is the first step of the plan (ADR-0017).\n- **Trigger 1 (module dependency):** not hit. identity starts calling integration's existing kind of read, but `docs/architecture.md` section 4 already names that path, and the direction between the modules doesn't change.\n- **Triggers 3–5:** not hit. The read is live, so there is no table, no new technology and nothing that contradicts a Discovery ID.\n\n**Discovery IDs:** the story has no AC IDs. It serves T2-C-010 (customer and advisor master data), within T3-D-005, T3-AC-001 and T2-D-009. I couldn't run `pnpm ids show` because shell commands are blocked in this session. Instead I searched the register file directly, and all of these IDs are there and active. Run `pnpm ids show T2-C-010` once to confirm.\n\n**Design in short:**\n- **ERP port:** `AdvisorMasterData { advisorNumber (B + 5 digits), givenName, familyName, email, active, sourceVersion }` and `ErpPort.readAdvisor()`.\n- **Fake ERP:** `fakeAdvisors` with one invented advisor, `B20001`, using an `@example.test` address.\n- **integration:** `Integration.readAdvisor()` returns the data with its source, source version and read time, or `null`.\n- **identity:** `createIdentity` now takes `integration` as a dependency. `getAdvisor(advisorNumber)` returns `{ advisorNumber, givenName, familyName, email, active, sourceVersion, readAt }` or `null`. It doesn't catch the error thrown when the ERP is down, so the caller decides what to do.\n- **Worker:** `createApp()` passes integration into identity, which exposes `app.identity.getAdvisor`.\n\n**Decisions the approver should look at** (listed under \"Local decisions\" in the spec):\n- An inactive advisor is returned with `active: false`, not `null`.\n- There is no stored copy of advisor data; each call reads the ERP live.\n- A malformed advisor number simply returns `null`.\n\n**Open questions:** none.\n\n**Files:**\n- `docs/specs/AN-902/spec.md`\n- `docs/specs/AN-902/plan.md`\n\n**Next:** a second person approves the spec by adding `Approved-by:` and setting Status to `Approved`. After that, run `/implement AN-902`; it starts with the ADR and ends with `/review` and `pnpm check`. Nothing is committed yet.",
+      "toolCalls": {
+        "Skill": 1,
+        "Bash": 1,
+        "Glob": 2,
+        "Read": 21,
+        "Grep": 5,
+        "Write": 2
+      },
+      "docsRead": [
+        "packages/core/src/identity/AGENTS.md",
+        "packages/core/src/integration/AGENTS.md",
+        "packages/erp-port/AGENTS.md",
+        "docs/specs/_template/spec.md",
+        "docs/specs/_template/plan.md",
+        "docs/conventions/erp.md",
+        "apps/worker/AGENTS.md",
+        "packages/erp-fake/AGENTS.md",
+        "docs/architecture.md",
+        "docs/adr/README.md",
+        "docs/specs/README.md",
+        "docs/discovery-baseline.md",
+        "docs/conventions/testing.md",
+        "docs/jira.md"
+      ],
+      "filesReadCount": 21
+    },
+    {
+      "phase": "implement",
+      "code": 0,
+      "stderr": "Ignoring 7 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T2-v2-spec-off-r2\"].hasTrustDialogAccepted: true in /Users/57block/.claude.json.\n",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 1.3948892,
+      "durationMs": 280676,
+      "turns": 84,
+      "usage": {
+        "input_tokens": 68,
+        "cache_creation_input_tokens": 53962,
+        "cache_read_input_tokens": 1487112,
+        "output_tokens": 20827,
+        "output_tokens_details": {
+          "thinking_tokens": 965
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 53962,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1169,
+            "cache_read_input_tokens": 67473,
+            "cache_creation_input_tokens": 740,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 740
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "AN-902 is implemented. All six plan steps are ticked, `pnpm check` passes (44 tests) and `pnpm trace --require` passes. The spec has no AC IDs, so the trace check has nothing to require.\n\n**The three commits are on local `main`, not on a branch.** Creating a branch was denied in this session, so they sit right on top of the baseline commit: `b55fc90`, `8e7c0d4`, `4315609`. Nothing is pushed. Before you open a PR, move them to a branch:\n```\ngit branch feat/AN-902-read-advisor && git reset --hard 3bcc56b && git checkout feat/AN-902-read-advisor\n```\nThe `reset --hard` makes local `main` match the baseline again, so check `git status` is clean before you run it.\n\nWhat changed:\n- **ADR-0017** (Proposed) records the new ERP operation `readAdvisor`; it is in the index and the next free ADR number is now 0018.\n- **ERP contract:** `AdvisorMasterData` and `ErpPort.readAdvisor` were added. The fake ERP has one invented advisor, `B20001`, with an `@example.test` address.\n- **integration:** new `Integration.readAdvisor`.\n- **identity:** `createIdentity` now takes `integration`, and the new `getAdvisor` returns the flat `Advisor` shape or `null`. If the ERP is down, the error goes through to the caller.\n- **worker:** `createApp` passes the integration service to identity, and tests cover found, not found and an ERP outage.\n- **Module files:** the four `AGENTS.md` files are updated. Spec Status is now `Done` and the Handoff section is empty.\n\nThe reviewer approved with only low-severity findings. I fixed or recorded each one under \"Deviations\" in the spec. One point for later: callers outside integration can't import `ErpUnavailableError`, because integration doesn't re-export it. That already applies to `readCustomer`, so I left it as a follow-up.\n\n**Still for a person:**\n- Accept ADR-0017.\n- Fill in the `<tech lead>` placeholder under Deciders in ADR-0017.\n\n**PR title:** `feat: read advisor master data from the ERP (AN-902)`\n\n**PR body:**\n```\nSpec: docs/specs/AN-902/spec.md\nRefs: AN-902\nCovered: none\n\n## Verification\n- pnpm check: pass (typecheck, lint, 44 tests, arch, pii, ids, docs)\n- pnpm trace --require: pass (spec has no AC IDs)\n- reviewer subagent: APPROVE, low-severity findings fixed or recorded below\n\n## Deviations from spec\n- integration: `readCustomer` and `readAdvisor` share a private `toRead` helper. No behaviour change, no contract change.\n- The identity outage test uses a stub error named `ErpUnavailableError`, because identity may not import `@provital/erp-port` and integration does not re-export the class. The worker test covers the real error. Follow-up: re-export `ErpUnavailableError` from integration.\n- ADR-0017 \"Deciders\" keeps the `<tech lead>` placeholder (as ADR-0015/0016); filled in when the ADR is accepted.\n- Info: T2-D-009 is cited for a live read's version and time, the same as the existing `ErpRead` usage.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n```",
+      "toolCalls": {
+        "Skill": 2,
+        "Bash": 28,
+        "Read": 15,
+        "Glob": 1,
+        "Write": 2,
+        "Edit": 37,
+        "Grep": 4,
+        "Agent": 1
+      },
+      "docsRead": [
+        "docs/adr/README.md",
+        "docs/adr/0000-template.md",
+        "docs/adr/0016-documentation-architecture.md",
+        "docs/conventions/erp.md",
+        "docs/conventions/testing.md",
+        ".github/pull_request_template.md"
+      ],
+      "filesReadCount": 15
+    }
+  ]
+}

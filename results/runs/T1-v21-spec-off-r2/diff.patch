@@ -1,0 +1,334 @@
+diff --git a/docs/specs/AN-901/plan.md b/docs/specs/AN-901/plan.md
+new file mode 100644
+index 0000000..24631f5
+--- /dev/null
++++ b/docs/specs/AN-901/plan.md
+@@ -0,0 +1,10 @@
++# AN-901: plan
++
++Each step is small and ends with passing tests. Mark a step `[x]` when it is done, in the same commit.
++
++- [x] 1. Test: `registerPerson` with `dateOfBirth: "1990-05-17"` → `getPerson` returns it; without it → `null`. Code: `Person.dateOfBirth`, `RegisterPersonInput.dateOfBirth?`, set in `registerPerson` (files: `identity/identity.test.ts`, `identity/person.ts`, `identity/service.ts`)
++- [x] 2. Test: a date of birth after today (`fixedClock`, including the Berlin midnight edge: 2026-11-04T23:30Z is already 2026-11-05 in Berlin) is rejected with `InvalidDateOfBirthError`; today is accepted; `2001-02-30` and `01.02.2001` are rejected. Code: `InvalidDateOfBirthError`, validation with `kernel.businessDate`, export from `index.ts` (files: `identity/identity.test.ts`, `identity/service.ts`, `identity/index.ts`)
++- [x] 3. Column `date_of_birth` (Drizzle `date`, string mode, nullable) with the personal data metadata of the spec; `pnpm pii` passes (files: `identity/schema.ts`)
++- [x] 4. Update the module `AGENTS.md` (public API, tables, invariant). Run `/review`, then `pnpm check`.
++
++## Handoff
+diff --git a/docs/specs/AN-901/spec.md b/docs/specs/AN-901/spec.md
+new file mode 100644
+index 0000000..594b3d3
+--- /dev/null
++++ b/docs/specs/AN-901/spec.md
+@@ -0,0 +1,73 @@
++# AN-901: Add a date of birth to the person
++
++- **Jira:** AN-901
++- **Gate:** normal
++- **Status:** Done
++- **Approved-by:** lab-approver 2026-11-04
++- **Baseline:** Discovery v0.1
++- **Module:** identity. Touches: none
++
++## Context
++
++The person record (T3-D-009) has no date of birth. Birthday journeys (A4-O-001 date triggers, A4-C-002) need it. The story has no AC IDs.
++
++## Acceptance criteria
++
++IDs only; `pnpm ids show <ID>` prints the text.
++
++| ID | Test |
++|---|---|
++| None | `packages/core/src/identity/identity.test.ts` (titles without an AC ID) |
++
++Story behaviour, tested in `identity.test.ts`:
++
++- `registerPerson` accepts an optional `dateOfBirth` (`YYYY-MM-DD`) and stores it.
++- `getPerson` returns `dateOfBirth`, or `null` when it was not given.
++- A date of birth after today is rejected with `InvalidDateOfBirthError`.
++
++## Design increment
++
++- **Module file** (`packages/core/src/identity/AGENTS.md`):
++  - Public API: `.registerPerson({ email, givenName, familyName, brand?, dateOfBirth? })`. Throws `InvalidDateOfBirthError` when `dateOfBirth` is not a valid `YYYY-MM-DD` date or is after today.
++  - Public API: new export `InvalidDateOfBirthError`.
++  - `Person` gets `readonly dateOfBirth: string | null`.
++  - Tables: `identity.person` personal columns add `date_of_birth`.
++  - Invariants: add "A date of birth is a calendar date (`YYYY-MM-DD`) and is not after today in the `Europe/Berlin` calendar."
++  - AC IDs: unchanged.
++- **Contracts:** none. The `identity.person-registered` payload stays `personId`, `brand`.
++- **Schema:** `identity.person.date_of_birth`, Drizzle `date("date_of_birth", { mode: "string" })`, nullable. Data metadata:
++
++  ```ts
++  dateOfBirth: {
++    personal: true,
++    category: "identity",
++    purpose: "Birthday journeys and greetings",
++    owner: "identity",
++    retention: "account lifetime + 3 years",
++  },
++  ```
++
++  Category `identity` already exists on this table, so this is not trigger 3.
++
++## Local decisions
++
++- "Future" means after today's business date in `Europe/Berlin` (`kernel.businessDate(clock.now())`), per the data conventions; today itself is accepted.
++- A string that is not a real calendar date (`2001-02-30`, `01.02.2001`) is rejected with the same `InvalidDateOfBirthError`; storing it would break the date column.
++- The date of birth is not added to the `identity.person-registered` payload; consumers read it with `getPerson`. This keeps the event contract unchanged.
++- Stored as a plain date string, not a timestamp: a date of birth has no time zone.
++
++## Out of scope
++
++- Changing the date of birth after registration.
++- A minimum age or a lower bound on the year.
++- Birthday journeys themselves (A4-C-002).
++
++## Open questions
++
++**Answers of the approver (lab-approver, a person):** for each question, take the option that follows the conventions in `docs/conventions/` and the module files. Where they say nothing, take the option that this spec proposes. Record each answer under "Local decisions" when you implement.
++
++The spec has no open questions; the answers above need no new local decision.
++
++## Deviations
++
++- Added a test that the `identity.person-registered` payload is exactly `personId`, `brand` when a date of birth is given (review finding); the spec named no test for "Contracts: none".
+diff --git a/packages/core/src/identity/AGENTS.md b/packages/core/src/identity/AGENTS.md
+index 9dbad7d..096c669 100644
+--- a/packages/core/src/identity/AGENTS.md
++++ b/packages/core/src/identity/AGENTS.md
+@@ -9,10 +9,11 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ | Export | Use |
+ |---|---|
+ | `createIdentity({ repo, bus, clock })` | Builds the module service |
+-| `.registerPerson({ email, givenName, familyName, brand? })` | Creates a person. Publishes `identity.person-registered` |
+-| `.getPerson(id)` | Reads a person or `null` |
++| `.registerPerson({ email, givenName, familyName, brand?, dateOfBirth? })` | Creates a person. `dateOfBirth` is `YYYY-MM-DD`. Publishes `identity.person-registered` |
++| `.getPerson(id)` | Reads a person or `null`. `dateOfBirth` is `null` when not given |
+ | `InMemoryPersonRepository` | Store for tests and the fixture |
+ | `EmailAlreadyRegisteredError` | Thrown when the e-mail exists |
++| `InvalidDateOfBirthError` | Thrown when `dateOfBirth` is not a `YYYY-MM-DD` date or is after today |
+ | `Identity`, `IdentityDeps`, `RegisterPersonInput` | Types of the service |
+ | `Person`, `PersonRepository`, `PersonRegistered` | Types of the record, the store and the event |
+ 
+@@ -20,7 +21,7 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ | Table | Personal columns |
+ |---|---|
+-| `identity.person` | `email`, `given_name`, `family_name` |
++| `identity.person` | `email`, `given_name`, `family_name`, `date_of_birth` |
+ 
+ ## Events <!-- verified: events -->
+ 
+@@ -32,6 +33,7 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ - One person record per e-mail address. The e-mail is stored in lower case (T3-AC-003).
+ - At most one ERP customer number per person (T3-AC-003).
++- A date of birth is a calendar date (`YYYY-MM-DD`) and is not after today in the `Europe/Berlin` calendar.
+ - ERP master data comes through the `integration` module, never from the ERP port.
+ 
+ ## Acceptance criteria
+diff --git a/packages/core/src/identity/identity.test.ts b/packages/core/src/identity/identity.test.ts
+index 097fec0..47f0cbc 100644
+--- a/packages/core/src/identity/identity.test.ts
++++ b/packages/core/src/identity/identity.test.ts
+@@ -1,13 +1,18 @@
+ import { describe, expect, it } from "vitest";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createIdentity, EmailAlreadyRegisteredError, InMemoryPersonRepository } from "./index";
++import {
++  createIdentity,
++  EmailAlreadyRegisteredError,
++  InMemoryPersonRepository,
++  InvalidDateOfBirthError,
++} from "./index";
+ 
+-function setup() {
++function setup(now = "2027-01-05T08:00:00Z") {
+   const bus = new InMemoryEventBus();
+   const identity = createIdentity({
+     repo: new InMemoryPersonRepository(),
+     bus,
+-    clock: fixedClock("2027-01-05T08:00:00Z"),
++    clock: fixedClock(now),
+   });
+   return { bus, identity };
+ }
+@@ -38,4 +43,59 @@ describe("identity", () => {
+       payload: { personId: person.id },
+     });
+   });
++
++  it("stores the date of birth, or null when it was not given", async () => {
++    const { identity } = setup();
++    const erika = await identity.registerPerson({
++      email: "erika@example.test",
++      givenName: "Erika",
++      familyName: "Muster",
++      dateOfBirth: "1990-05-17",
++    });
++    const max = await identity.registerPerson({
++      email: "max@example.test",
++      givenName: "Max",
++      familyName: "Beispiel",
++    });
++    expect((await identity.getPerson(erika.id))?.dateOfBirth).toBe("1990-05-17");
++    expect((await identity.getPerson(max.id))?.dateOfBirth).toBeNull();
++  });
++
++  it("keeps the date of birth out of the identity.person-registered payload", async () => {
++    const { bus, identity } = setup();
++    const person = await identity.registerPerson({
++      email: "erika@example.test",
++      givenName: "Erika",
++      familyName: "Muster",
++      dateOfBirth: "1990-05-17",
++    });
++    expect(bus.published[0]?.payload).toEqual({ personId: person.id, brand: "provital" });
++  });
++
++  it("rejects a date of birth after today in the Berlin calendar", async () => {
++    // 23:30 UTC is already 2026-11-05 in Berlin.
++    const { identity } = setup("2026-11-04T23:30:00Z");
++    const register = (email: string, dateOfBirth: string) =>
++      identity.registerPerson({ email, givenName: "Erika", familyName: "Muster", dateOfBirth });
++    await expect(register("a@example.test", "2026-11-06")).rejects.toBeInstanceOf(
++      InvalidDateOfBirthError,
++    );
++    await expect(register("b@example.test", "2026-11-05")).resolves.toMatchObject({
++      dateOfBirth: "2026-11-05",
++    });
++  });
++
++  it("rejects a date of birth that is not a YYYY-MM-DD calendar date", async () => {
++    const { identity } = setup();
++    for (const dateOfBirth of ["2001-02-30", "01.02.2001", "2001-2-3", ""]) {
++      await expect(
++        identity.registerPerson({
++          email: "erika@example.test",
++          givenName: "Erika",
++          familyName: "Muster",
++          dateOfBirth,
++        }),
++      ).rejects.toBeInstanceOf(InvalidDateOfBirthError);
++    }
++  });
+ });
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..a4ed6ac 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,4 @@
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+-export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export { createIdentity, EmailAlreadyRegisteredError, InvalidDateOfBirthError } from "./service";
+diff --git a/packages/core/src/identity/person.ts b/packages/core/src/identity/person.ts
+index c418b92..832d2a1 100644
+--- a/packages/core/src/identity/person.ts
++++ b/packages/core/src/identity/person.ts
+@@ -5,6 +5,8 @@ export interface Person {
+   readonly email: string;
+   readonly givenName: string;
+   readonly familyName: string;
++  /** Calendar date `YYYY-MM-DD`, or `null` when not given. */
++  readonly dateOfBirth: string | null;
+   readonly erpCustomerNumber: string | null;
+   readonly brand: string;
+   readonly createdAt: string;
+diff --git a/packages/core/src/identity/schema.ts b/packages/core/src/identity/schema.ts
+index 2e5a8bf..b32089a 100644
+--- a/packages/core/src/identity/schema.ts
++++ b/packages/core/src/identity/schema.ts
+@@ -1,4 +1,4 @@
+-import { pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
++import { date, pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
+ import { notPersonal, withDataMeta } from "../kernel";
+ 
+ export const identitySchema = pgSchema("identity");
+@@ -9,6 +9,7 @@ export const persons = withDataMeta(
+     email: text("email").notNull().unique(),
+     givenName: text("given_name").notNull(),
+     familyName: text("family_name").notNull(),
++    dateOfBirth: date("date_of_birth", { mode: "string" }),
+     erpCustomerNumber: text("erp_customer_number").unique(),
+     brand: text("brand").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+@@ -36,6 +37,13 @@ export const persons = withDataMeta(
+       owner: "identity",
+       retention: "account lifetime + 3 years",
+     },
++    dateOfBirth: {
++      personal: true,
++      category: "identity",
++      purpose: "Birthday journeys and greetings",
++      owner: "identity",
++      retention: "account lifetime + 3 years",
++    },
+     erpCustomerNumber: notPersonal,
+     brand: notPersonal,
+     createdAt: notPersonal,
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..316a8a2 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,4 +1,4 @@
+-import { type Clock, type EventBus, newId, systemClock } from "../kernel";
++import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Person, PersonRegistered, PersonRepository } from "./person";
+ 
+ export interface RegisterPersonInput {
+@@ -6,6 +6,8 @@ export interface RegisterPersonInput {
+   givenName: string;
+   familyName: string;
+   brand?: string;
++  /** ISO date `YYYY-MM-DD`. */
++  dateOfBirth?: string;
+ }
+ 
+ export class EmailAlreadyRegisteredError extends Error {
+@@ -15,6 +17,21 @@ export class EmailAlreadyRegisteredError extends Error {
+   }
+ }
+ 
++export class InvalidDateOfBirthError extends Error {
++  constructor() {
++    super("The date of birth is not a YYYY-MM-DD date on or before today");
++    this.name = "InvalidDateOfBirthError";
++  }
++}
++
++/** A real calendar date `YYYY-MM-DD` that is not after `today` (both business dates). */
++function isValidDateOfBirth(value: string, today: string): boolean {
++  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
++  const parsed = new Date(`${value}T00:00:00Z`);
++  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return false;
++  return value <= today;
++}
++
+ export interface IdentityDeps {
+   repo: PersonRepository;
+   bus: EventBus;
+@@ -26,13 +43,20 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+     /** One person record per e-mail address (T3-D-009). */
+     async registerPerson(input: RegisterPersonInput): Promise<Person> {
+       const email = input.email.trim().toLowerCase();
+-      if (await repo.findByEmail(email)) throw new EmailAlreadyRegisteredError();
+       const now = clock.now();
++      if (
++        input.dateOfBirth !== undefined &&
++        !isValidDateOfBirth(input.dateOfBirth, businessDate(now))
++      ) {
++        throw new InvalidDateOfBirthError();
++      }
++      if (await repo.findByEmail(email)) throw new EmailAlreadyRegisteredError();
+       const person: Person = {
+         id: newId(now),
+         email,
+         givenName: input.givenName,
+         familyName: input.familyName,
++        dateOfBirth: input.dateOfBirth ?? null,
+         erpCustomerNumber: null,
+         brand: input.brand ?? "provital",
+         createdAt: now.toISOString(),
