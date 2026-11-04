@@ -11,6 +11,8 @@ Experiments that choose the documentation architecture and the agent workflow fo
 | [variants/layout-a](variants/layout-a/) | E1-A: the current `AGENTS.md` (baseline) |
 | [variants/layout-b](variants/layout-b/) | E1-B: one large root `AGENTS.md`. **Generated** from layout C by `node harness/build-layout-b.mjs`; do not edit |
 | [variants/layout-c](variants/layout-c/) | E1-C: short root `AGENTS.md`, `docs/README.md` map, `docs/conventions/`, ADR template, `AGENTS.md` + `CLAUDE.md` per module |
+| [variants/layout-v2](variants/layout-v2/) | Tier A of [the v2 proposal](proposals/ai-dev-spec-v2.md): layout C plus the Discovery ID register, `tools/{ids,docs-check,pr-check}`, the stricter `pii-check`, spec and plan templates, skills `story-start`, `implement`, `review`, `handoff`, subagent `reviewer`, PR template, CI. Has its own story workflow: with `--workflow spec` the harness uses its skills, not `variants/workflow`. Its extra `pnpm ids` and `pnpm docs` results are recorded in `checks`, but not in `checks.all` |
+| [variants/layout-v21](variants/layout-v21/) | v2.1: v2 with the revisions of [the proposal, part 5](proposals/ai-dev-spec-v2.md): stop only for a change to the public API, contracts or schema; subscribing to an existing event is not a design story; plain commands, no branches; no spec file for a normal story on a direct request (`pr-check` accepts a "Design increment" section instead). Experiment `V21` |
 | [variants/workflow](variants/workflow/) | E2-B: spec and plan templates, skills `story-to-spec` and `implement-plan`, subagent `architecture-reviewer` |
 | [variants/feedback](variants/feedback/) | E3-B: Stop hook that runs `pnpm check` and sends failures back (3 attempts) |
 | [tasks/](tasks/) | T1–T6: `task.json` (prompt), `grader/` (hidden tests, copied in after the run), `rubric.md` |
@@ -28,6 +30,7 @@ node harness/batch.mjs E1 --parallel 2                             # 24 runs
 node harness/batch.mjs E2 --best c                                 # after E1: set the winning layout
 node harness/batch.mjs E3 --best c
 node harness/report.mjs --best c                                   # writes results/summary.md
+node harness/run.mjs --task T6 --layout v2 --build-only            # build a workspace only, print its path: for work on a variant
 ```
 
 Each run:

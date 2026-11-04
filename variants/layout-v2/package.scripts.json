@@ -1,0 +1,6 @@
+{
+  "ids": "tsx tools/ids/index.ts",
+  "docs": "tsx tools/docs-check/index.ts",
+  "prcheck": "tsx tools/pr-check/index.ts",
+  "check": "pnpm -s typecheck && pnpm -s lint && pnpm -s test && pnpm -s arch && pnpm -s pii && pnpm -s ids && pnpm -s docs"
+}

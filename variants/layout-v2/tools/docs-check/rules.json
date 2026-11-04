@@ -1,0 +1,42 @@
+{
+  "lineLimits": [
+    { "glob": "AGENTS.md", "max": 60 },
+    { "glob": "docs/README.md", "max": 40 },
+    { "glob": "docs/jira.md", "max": 80 },
+    { "glob": "docs/conventions/*.md", "max": 60 },
+    { "glob": "docs/engineering/*.md", "max": 120 },
+    { "glob": "packages/**/AGENTS.md", "max": 100 },
+    { "glob": "apps/**/AGENTS.md", "max": 100 },
+    { "glob": "docs/adr/[0-9][0-9][0-9][0-9]-*.md", "max": 80 },
+    { "glob": "docs/changes/CR-*.md", "max": 40 },
+    { "glob": "docs/specs/AN-*/spec.md", "max": 150 },
+    { "glob": "docs/specs/AN-*/plan.md", "max": 80 },
+    { "glob": "docs/architecture.md", "max": 300 },
+    { "glob": "docs/infrastructure.md", "max": 250 },
+    { "glob": "docs/delivery-plan.md", "max": 200 },
+    { "glob": "docs/discovery-baseline.md", "max": 200 },
+    { "glob": "docs/technical-decisions.md", "max": 500 }
+  ],
+  "living": [
+    "AGENTS.md",
+    "docs/README.md",
+    "docs/jira.md",
+    "docs/conventions/*.md",
+    "docs/engineering/*.md",
+    "packages/**/AGENTS.md",
+    "apps/**/AGENTS.md"
+  ],
+  "links": [
+    "AGENTS.md",
+    "docs/README.md",
+    "docs/jira.md",
+    "docs/conventions/*.md",
+    "docs/engineering/*.md",
+    "docs/adr/*.md",
+    "docs/specs/**/*.md",
+    "docs/changes/*.md",
+    "packages/**/AGENTS.md",
+    "apps/**/AGENTS.md"
+  ],
+  "moduleSections": ["Owns", "Public API", "Events", "Invariants", "Acceptance criteria"]
+}
