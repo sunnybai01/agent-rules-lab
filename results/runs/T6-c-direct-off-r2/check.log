@@ -1,0 +1,27 @@
+
+===== typecheck: pass =====
+
+===== lint: pass =====
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T6-c-direct-off-r2
+
+
+ Test Files  7 passed (7)
+      Tests  26 passed (26)
+   Start at  08:56:26
+   Duration  180ms (import 72%, transform 17%, tests 7%, worker 5%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (28 modules, 48 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 3 tables.
+
+===== trace: pass =====
+T3-AC-003	packages/core/src/identity/identity.test.ts
+T3-AC-004	packages/core/src/identity/consent.test.ts, apps/worker/src/worker.test.ts

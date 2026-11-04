@@ -1,0 +1,135 @@
+{
+  "runId": "T2-b-direct-off-r2",
+  "task": "T2",
+  "layout": "b",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 2,
+  "model": "claude-opus-5-5",
+  "startedAt": "2026-11-04T00:48:51.201Z",
+  "wallMs": 149755,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "returns the advisor B20001 with source version and read time",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null for an unknown advisor",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "identity does not import the ERP port or an adapter",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "the ERP outage surfaces as an error, not as null",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the advisor contract is a Zod schema in erp-port",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "AGENTS.md",
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "docs/adr/0015-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/person.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/integration/index.ts",
+    "packages/core/src/integration/integration.test.ts",
+    "packages/erp-fake/src/erp-fake.test.ts",
+    "packages/erp-fake/src/index.ts",
+    "packages/erp-port/src/index.ts"
+  ],
+  "docsChanged": [
+    "AGENTS.md",
+    "docs/adr/0015-erp-advisor-master-data-read.md",
+    "docs/adr/README.md"
+  ],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 0.7455890000000001,
+  "agentMs": 144387,
+  "turns": 34,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 0.7455890000000001,
+      "durationMs": 144387,
+      "turns": 34,
+      "usage": {
+        "input_tokens": 28,
+        "cache_creation_input_tokens": 42540,
+        "cache_read_input_tokens": 535885,
+        "output_tokens": 14899,
+        "output_tokens_details": {
+          "thinking_tokens": 1652
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 42540,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1048,
+            "cache_read_input_tokens": 52252,
+            "cache_creation_input_tokens": 2904,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 2904
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "`app.identity.getAdvisor(\"B20001\")` now returns the advisor's master data from the fake ERP, and `null` for an advisor the ERP doesn't have. `pnpm check` passes (types, lint, all 23 tests, architecture rules, personal data check).\n\n**Not committed yet.** My command to create a branch was denied, and I didn't want to commit straight onto `main`. Everything is in the working tree. Once you create a branch (named with the Jira key, e.g. `AN-<n>-identity-get-advisor`), it's ready to commit as:\n\n```\nfeat(identity): read advisor master data from the ERP (AN-<n>)\n```\n\nI don't know the Jira issue number, so I left `<n>` blank. I didn't search Jira or create an issue.\n\n**Needs a person to sign off:** adding an advisor read to the ERP interface is a contract change, and the project rules require a decision record for that. I wrote `docs/adr/0015-erp-advisor-master-data-read.md` with status `Proposed` and added it to the index. Numbers 0002–0014 are reserved, so I used 0015. Someone needs to accept it before the PR merges, and the \"Deciders\" field is still empty.\n\n**What changed:**\n- **ERP interface and fake data:** a new advisor data shape (`B` + 5 digits, given name, family name, e-mail, active flag, source version), a `readAdvisor` operation, and fake advisor `B20001` (Anna Beraterin, `anna.beraterin@example.test`, active).\n- **Integration module:** `readAdvisor` adds the source version and read time to each read. It also re-exports the ERP-down error, so other modules can catch it without touching the ERP interface, which the architecture rules forbid.\n- **Identity module:** `getAdvisor` returns exactly the fields you specified. `createIdentity` now requires the integration module as an input, so any code that builds the identity module must pass it.\n- **Worker:** `createApp()` passes the integration module into identity, so `app.identity.getAdvisor` works.\n- **AGENTS.md:** the identity, integration, ERP interface and fake ERP sections list the new functions.\n\n**Decisions to check:**\n- **ERP down:** `getAdvisor` throws the ERP-down error rather than returning `null`, because `null` means \"no such advisor\". This follows the project rule that the caller decides what to do when the ERP is down.\n- **No storage:** advisor data is read live each time and not saved. That's why there's no new table or personal-data metadata.\n- **Test titles:** your request didn't come with an acceptance criterion ID, so I used existing IDs that fit (T2-D-009 for the read time and version, T3-AC-001 for ERP access going through the integration module). The new tests for \"no such advisor\" and \"ERP down\" have no ID.\n\nI wrote the tests first and saw them fail before writing the code.",
+      "toolCalls": {
+        "Bash": 7,
+        "Read": 1,
+        "Write": 3,
+        "Edit": 22
+      },
+      "docsRead": [],
+      "filesReadCount": 1
+    }
+  ]
+}

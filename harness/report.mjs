@@ -60,7 +60,8 @@ for (const [name, e] of Object.entries(experiments)) {
   if (!inExp.length) continue;
   const varying = layouts.length > 1 ? "layout" : e.workflows.length > 1 ? "workflow" : e.feedback.length > 1 ? "feedback" : "layout";
   const values = varying === "layout" ? layouts : varying === "workflow" ? e.workflows : e.feedback;
-  md += `\n## ${name}: by ${varying}\n\n${table(values.map((v) => row(v, inExp.filter((r) => r[varying] === v))))}\n`;
+  const withRuns = values.filter((v) => inExp.some((r) => r[varying] === v));
+  md += `\n## ${name}: by ${varying}\n\n${table(withRuns.map((v) => row(v, inExp.filter((r) => r[varying] === v))))}\n`;
   if (e.tasks.length > 1) {
     md += `\n### ${name}: by task and ${varying}\n\n`;
     md += table(e.tasks.flatMap((t) => values.map((v) => row(`${t} / ${v}`, inExp.filter((r) => r.task === t && r[varying] === v)))));

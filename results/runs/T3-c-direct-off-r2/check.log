@@ -1,0 +1,23 @@
+
+===== typecheck: pass =====
+
+===== lint: pass =====
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T3-c-direct-off-r2
+
+
+ Test Files  7 passed (7)
+      Tests  19 passed (19)
+   Start at  08:53:10
+   Duration  171ms (import 70%, transform 18%, tests 7%, worker 5%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (28 modules, 51 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 2 tables.

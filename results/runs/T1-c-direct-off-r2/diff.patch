@@ -1,0 +1,284 @@
+diff --git a/docs/adr/0015-person-date-of-birth.md b/docs/adr/0015-person-date-of-birth.md
+new file mode 100644
+index 0000000..ed564b0
+--- /dev/null
++++ b/docs/adr/0015-person-date-of-birth.md
+@@ -0,0 +1,28 @@
++# ADR-0015: Store an optional date of birth on the person
++
++- **Status:** Proposed
++- **Date:** 2026-11-04
++- **Deciders:** <names>
++- **Sources:** T3-D-009, TD-06, TD-09, [data conventions](../conventions/data.md)
++
++## Context
++
++The person record (T3-D-009) holds the e-mail, the given name and the family name. A request asks to record the date of birth of a person at registration. The date of birth is personal data ([data conventions](../conventions/data.md)), so the column needs a purpose, an owner and a retention (TD-09). No Discovery item or acceptance criterion asks for the date of birth yet, so the field is optional and the purpose must be confirmed before the column holds production data. A date of birth is a calendar date, not an instant: it has no time and no time zone.
++
++## Options
++
++1. **A nullable `date` column `date_of_birth` on `identity.person`.** Good: one record per person stays true; a simple read through `getPerson`. Bad: every reader of the person row sees the date of birth.
++2. **A separate table `identity.person_profile`.** Good: the optional profile data is apart from the core record. Bad: a second table and a join for one column.
++3. **Store the date of birth as a `timestamp`.** Good: one value type for time. Bad: a time zone shift changes the calendar day.
++
++## Decision
++
++We choose option 1. One optional column is the smallest change, and the person record is the owner of personal attributes (T3-D-009). The value is an ISO date `YYYY-MM-DD` in a PostgreSQL `date` column, read and written as a string. `null` means that the person did not give it. A date of birth after today in the `Europe/Berlin` calendar is rejected.
++
++## Consequences
++
++- `registerPerson` accepts an optional `dateOfBirth`; `getPerson` returns `dateOfBirth` or `null`. Existing callers do not change.
++- The column is personal data in the category `identity` with the retention `account lifetime + 3 years`. `pnpm pii` enforces the metadata.
++- The purpose is open. The product owner and the data protection officer confirm it before production use; this ADR stays `Proposed` until then.
++- The migration adds a nullable column, so existing rows stay valid.
++- Tests in `packages/core/src/identity/identity.test.ts` cover the format check and the future-date check.
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 54cf3fe..c741ba9 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -14,3 +14,4 @@ An ADR records one decision that changes a module boundary, a contract, the data
+ | ADR | Title | Status |
+ |---|---|---|
+ | — | ADRs 0002 to 0014 are under review and are not in this repository yet | — |
++| [0015](0015-person-date-of-birth.md) | Store an optional date of birth on the person | Proposed |
+diff --git a/packages/core/src/identity/AGENTS.md b/packages/core/src/identity/AGENTS.md
+index 524401b..025134a 100644
+--- a/packages/core/src/identity/AGENTS.md
++++ b/packages/core/src/identity/AGENTS.md
+@@ -9,16 +9,17 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ | Export | Use |
+ |---|---|
+ | `createIdentity({ repo, bus, clock })` | Builds the module service |
+-| `.registerPerson({ email, givenName, familyName, brand? })` | Creates a person. Publishes `identity.person-registered` |
+-| `.getPerson(id)` | Reads a person or `null` |
++| `.registerPerson({ email, givenName, familyName, brand?, dateOfBirth? })` | Creates a person. `dateOfBirth` is an ISO date `YYYY-MM-DD`. Publishes `identity.person-registered` |
++| `.getPerson(id)` | Reads a person or `null`. `dateOfBirth` is `null` when it was not given |
+ | `InMemoryPersonRepository` | Store for tests and the fixture |
+ | `EmailAlreadyRegisteredError` | Thrown when the e-mail exists |
++| `InvalidDateOfBirthError` | Thrown when `dateOfBirth` is not a calendar date `YYYY-MM-DD` or is in the future |
+ 
+ ## Tables (`schema.ts`)
+ 
+ | Table | Personal columns |
+ |---|---|
+-| `identity.person` | `email`, `given_name`, `family_name` |
++| `identity.person` | `email`, `given_name`, `family_name`, `date_of_birth` |
+ 
+ ## Events
+ 
+@@ -30,6 +31,7 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ 
+ - One person record per e-mail address. The e-mail is stored in lower case (T3-AC-003).
+ - At most one ERP customer number per person (T3-AC-003).
++- The date of birth is optional and is not after today in the `Europe/Berlin` calendar (ADR-0015).
+ - ERP master data comes through the `integration` module, never from the ERP port.
+ 
+ ## Acceptance criteria
+diff --git a/packages/core/src/identity/identity.test.ts b/packages/core/src/identity/identity.test.ts
+index 097fec0..e5b1aeb 100644
+--- a/packages/core/src/identity/identity.test.ts
++++ b/packages/core/src/identity/identity.test.ts
+@@ -1,6 +1,11 @@
+ import { describe, expect, it } from "vitest";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createIdentity, EmailAlreadyRegisteredError, InMemoryPersonRepository } from "./index";
++import {
++  createIdentity,
++  EmailAlreadyRegisteredError,
++  InMemoryPersonRepository,
++  InvalidDateOfBirthError,
++} from "./index";
+ 
+ function setup() {
+   const bus = new InMemoryEventBus();
+@@ -38,4 +43,70 @@ describe("identity", () => {
+       payload: { personId: person.id },
+     });
+   });
++
++  describe("date of birth", () => {
++    it("returns the date of birth that was given", async () => {
++      const { identity } = setup();
++      const person = await identity.registerPerson({
++        email: "erika@example.test",
++        givenName: "Erika",
++        familyName: "Muster",
++        dateOfBirth: "1990-02-28",
++      });
++      expect((await identity.getPerson(person.id))?.dateOfBirth).toBe("1990-02-28");
++    });
++
++    it("returns null when no date of birth was given", async () => {
++      const { identity } = setup();
++      const person = await identity.registerPerson({
++        email: "max@example.test",
++        givenName: "Max",
++        familyName: "Beispiel",
++      });
++      expect((await identity.getPerson(person.id))?.dateOfBirth).toBeNull();
++    });
++
++    it("rejects a date of birth in the future", async () => {
++      const { identity } = setup();
++      await expect(
++        identity.registerPerson({
++          email: "max@example.test",
++          givenName: "Max",
++          familyName: "Beispiel",
++          dateOfBirth: "2027-01-06",
++        }),
++      ).rejects.toBeInstanceOf(InvalidDateOfBirthError);
++    });
++
++    it("accepts today in the Europe/Berlin calendar, after UTC midnight", async () => {
++      // 23:30 UTC on 4 Jan is 00:30 on 5 Jan in Berlin.
++      const identity = createIdentity({
++        repo: new InMemoryPersonRepository(),
++        bus: new InMemoryEventBus(),
++        clock: fixedClock("2027-01-04T23:30:00Z"),
++      });
++      const person = await identity.registerPerson({
++        email: "max@example.test",
++        givenName: "Max",
++        familyName: "Beispiel",
++        dateOfBirth: "2027-01-05",
++      });
++      expect(person.dateOfBirth).toBe("2027-01-05");
++    });
++
++    it.each(["1990-2-28", "28.02.1990", "1990-02-30", "1990-02-28T00:00:00Z", ""])(
++      "rejects the malformed date of birth %j",
++      async (dateOfBirth) => {
++        const { identity } = setup();
++        await expect(
++          identity.registerPerson({
++            email: "max@example.test",
++            givenName: "Max",
++            familyName: "Beispiel",
++            dateOfBirth,
++          }),
++        ).rejects.toBeInstanceOf(InvalidDateOfBirthError);
++      },
++    );
++  });
+ });
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..a4ed6ac 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,4 @@
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+-export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export { createIdentity, EmailAlreadyRegisteredError, InvalidDateOfBirthError } from "./service";
+diff --git a/packages/core/src/identity/person.ts b/packages/core/src/identity/person.ts
+index c418b92..75a2505 100644
+--- a/packages/core/src/identity/person.ts
++++ b/packages/core/src/identity/person.ts
+@@ -5,6 +5,8 @@ export interface Person {
+   readonly email: string;
+   readonly givenName: string;
+   readonly familyName: string;
++  /** ISO date `YYYY-MM-DD`, or `null` when the person did not give it. */
++  readonly dateOfBirth: string | null;
+   readonly erpCustomerNumber: string | null;
+   readonly brand: string;
+   readonly createdAt: string;
+diff --git a/packages/core/src/identity/schema.ts b/packages/core/src/identity/schema.ts
+index 2e5a8bf..9c510b2 100644
+--- a/packages/core/src/identity/schema.ts
++++ b/packages/core/src/identity/schema.ts
+@@ -1,4 +1,4 @@
+-import { pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
++import { date, pgSchema, text, timestamp, uuid } from "drizzle-orm/pg-core";
+ import { notPersonal, withDataMeta } from "../kernel";
+ 
+ export const identitySchema = pgSchema("identity");
+@@ -9,6 +9,7 @@ export const persons = withDataMeta(
+     email: text("email").notNull().unique(),
+     givenName: text("given_name").notNull(),
+     familyName: text("family_name").notNull(),
++    dateOfBirth: date("date_of_birth", { mode: "string" }),
+     erpCustomerNumber: text("erp_customer_number").unique(),
+     brand: text("brand").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+@@ -36,6 +37,13 @@ export const persons = withDataMeta(
+       owner: "identity",
+       retention: "account lifetime + 3 years",
+     },
++    dateOfBirth: {
++      personal: true,
++      category: "identity",
++      purpose: "Know the age of the person; to be confirmed in ADR-0015",
++      owner: "identity",
++      retention: "account lifetime + 3 years",
++    },
+     erpCustomerNumber: notPersonal,
+     brand: notPersonal,
+     createdAt: notPersonal,
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..30405fb 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,4 +1,4 @@
+-import { type Clock, type EventBus, newId, systemClock } from "../kernel";
++import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Person, PersonRegistered, PersonRepository } from "./person";
+ 
+ export interface RegisterPersonInput {
+@@ -6,6 +6,8 @@ export interface RegisterPersonInput {
+   givenName: string;
+   familyName: string;
+   brand?: string;
++  /** ISO date `YYYY-MM-DD`. */
++  dateOfBirth?: string;
+ }
+ 
+ export class EmailAlreadyRegisteredError extends Error {
+@@ -15,6 +17,28 @@ export class EmailAlreadyRegisteredError extends Error {
+   }
+ }
+ 
++export class InvalidDateOfBirthError extends Error {
++  constructor(reason: string) {
++    super(`Invalid date of birth: ${reason}`);
++    this.name = "InvalidDateOfBirthError";
++  }
++}
++
++const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
++
++/** A real calendar date `YYYY-MM-DD`, not after today in the business calendar (ADR-0015). */
++function checkDateOfBirth(value: string, today: string): string {
++  if (!ISO_DATE.test(value)) throw new InvalidDateOfBirthError("expected YYYY-MM-DD");
++  // Date.parse rolls 1990-02-30 over to 1990-03-02, so a round trip finds an invalid day.
++  const parsed = new Date(`${value}T00:00:00Z`);
++  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
++    throw new InvalidDateOfBirthError("not a calendar date");
++  }
++  // ISO dates of the same length sort in calendar order.
++  if (value > today) throw new InvalidDateOfBirthError("in the future");
++  return value;
++}
++
+ export interface IdentityDeps {
+   repo: PersonRepository;
+   bus: EventBus;
+@@ -28,11 +52,16 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+       const email = input.email.trim().toLowerCase();
+       if (await repo.findByEmail(email)) throw new EmailAlreadyRegisteredError();
+       const now = clock.now();
++      const dateOfBirth =
++        input.dateOfBirth === undefined
++          ? null
++          : checkDateOfBirth(input.dateOfBirth, businessDate(now));
+       const person: Person = {
+         id: newId(now),
+         email,
+         givenName: input.givenName,
+         familyName: input.familyName,
++        dateOfBirth,
+         erpCustomerNumber: null,
+         brand: input.brand ?? "provital",
+         createdAt: now.toISOString(),

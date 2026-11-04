@@ -1,0 +1,147 @@
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..2bd0844 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -1,3 +1,4 @@
++import { kernel } from "@provital/core";
+ import { describe, expect, it } from "vitest";
+ import { createApp } from "./index";
+ 
+@@ -11,4 +12,20 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("creates a welcome call for a new person", async () => {
++    const app = createApp({ clock: kernel.fixedClock("2027-01-05T23:30:00Z") });
++    const person = await app.identity.registerPerson({
++      email: "a@example.test",
++      givenName: "A",
++      familyName: "B",
++    });
++    const tasks = await app.journey.listTasks(person.id);
++    expect(tasks).toHaveLength(1);
++    expect(tasks[0]).toMatchObject({
++      kind: "welcome-call",
++      title: "Welcome call",
++      dueDate: "2027-01-06",
++    });
++  });
+ });
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..dd0b829 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,4 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+-export { createJourney } from "./service";
++export { createJourney, WELCOME_CALL_KIND } from "./service";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/journey.test.ts b/packages/core/src/journey/journey.test.ts
+index 322282c..c07ada0 100644
+--- a/packages/core/src/journey/journey.test.ts
++++ b/packages/core/src/journey/journey.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, expect, it } from "vitest";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createJourney, InMemoryTaskRepository } from "./index";
++import { createJourney, InMemoryTaskRepository, WELCOME_CALL_KIND } from "./index";
+ 
+ describe("journey", () => {
+   it("creates a task due today by default", async () => {
+@@ -13,4 +13,44 @@ describe("journey", () => {
+     expect(task.dueDate).toBe("2027-01-05");
+     expect(await journey.listTasks("p1")).toEqual([task]);
+   });
++
++  describe("on identity.person-registered", () => {
++    const registered = {
++      type: "identity.person-registered",
++      id: "e1",
++      // 23:30 UTC on 5 January is 00:30 on 6 January in Berlin.
++      occurredAt: "2027-01-05T23:30:00Z",
++      payload: { personId: "p1", brand: "provital" },
++    };
++
++    function setup() {
++      const bus = new InMemoryEventBus();
++      const journey = createJourney({
++        repo: new InMemoryTaskRepository(),
++        bus,
++        clock: fixedClock("2027-01-07T08:00:00Z"),
++      });
++      return { bus, journey };
++    }
++
++    it("creates a welcome call due on the business date of the registration", async () => {
++      const { bus, journey } = setup();
++      await bus.publish(registered);
++      const tasks = await journey.listTasks("p1");
++      expect(tasks).toHaveLength(1);
++      expect(tasks[0]).toMatchObject({
++        personId: "p1",
++        kind: WELCOME_CALL_KIND,
++        title: "Welcome call",
++        dueDate: "2027-01-06",
++      });
++    });
++
++    it("creates one welcome call when the event is delivered twice", async () => {
++      const { bus, journey } = setup();
++      await bus.publish(registered);
++      await bus.publish(registered);
++      expect(await journey.listTasks("p1")).toHaveLength(1);
++    });
++  });
+ });
+diff --git a/packages/core/src/journey/service.ts b/packages/core/src/journey/service.ts
+index d734128..3f4ac04 100644
+--- a/packages/core/src/journey/service.ts
++++ b/packages/core/src/journey/service.ts
+@@ -1,6 +1,9 @@
++import type { PersonRegistered } from "../identity";
+ import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Task, TaskRepository } from "./task";
+ 
++export const WELCOME_CALL_KIND = "welcome-call";
++
+ export interface CreateTaskInput {
+   personId: string;
+   kind: string;
+@@ -14,8 +17,8 @@ export interface JourneyDeps {
+   clock?: Clock;
+ }
+ 
+-export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+-  return {
++export function createJourney({ repo, bus, clock = systemClock }: JourneyDeps) {
++  const journey = {
+     async createTask(input: CreateTaskInput): Promise<Task> {
+       const now = clock.now();
+       const task: Task = {
+@@ -34,6 +37,24 @@ export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+       return repo.listByPerson(personId);
+     },
+   };
++
++  /**
++   * The advisor calls each new person. The task is due on the business date of the
++   * registration, not of the delivery. A redelivered event creates no second task.
++   */
++  bus.subscribe<PersonRegistered>("identity.person-registered", async (event) => {
++    const { personId } = event.payload;
++    const tasks = await repo.listByPerson(personId);
++    if (tasks.some((task) => task.kind === WELCOME_CALL_KIND)) return;
++    await journey.createTask({
++      personId,
++      kind: WELCOME_CALL_KIND,
++      title: "Welcome call",
++      dueDate: businessDate(new Date(event.occurredAt)),
++    });
++  });
++
++  return journey;
+ }
+ 
+ export type Journey = ReturnType<typeof createJourney>;

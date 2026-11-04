@@ -1,0 +1,45 @@
+
+===== typecheck: pass =====
+
+===== lint: FAIL =====
+
+packages/core/src/identity/service.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+    57 57 │         const now = clock.now();
+    58 58 │         const dateOfBirth =
+    59    │ - ········input.dateOfBirth·===·undefined·?·null·:·checkDateOfBirth(input.dateOfBirth,·businessDate(now));
+       59 │ + ········input.dateOfBirth·===·undefined
+       60 │ + ··········?·null
+       61 │ + ··········:·checkDateOfBirth(input.dateOfBirth,·businessDate(now));
+    60 62 │         const person: Person = {
+    61 63 │           id: newId(now),
+  
+
+Checked 37 files in 50ms. No fixes applied.
+Found 1 error.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+
+===== test: pass =====
+
+ RUN  v5.1.0 /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T1-a-direct-off-r2
+
+
+ Test Files  6 passed (6)
+      Tests  23 passed (23)
+   Start at  08:47:11
+   Duration  299ms (import 49%, transform 44%, tests 4%, worker 3%)
+
+
+===== arch: pass =====
+
+✔ no dependency violations found (26 modules, 42 dependencies cruised)
+
+
+===== pii: pass =====
+Personal data check passed: 2 tables.

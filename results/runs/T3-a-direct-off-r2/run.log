@@ -1,0 +1,4 @@
+2026-11-04T00:49:25.570Z build workspace /private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T3-a-direct-off-r2; CLI /usr/local/bin/claude
+2026-11-04T00:49:26.548Z phase main: claude -p (budget $4)
+2026-11-04T00:50:26.741Z grade
+2026-11-04T00:50:30.098Z done: success=true hard=true checks=true cost=$0.42 turns=25
