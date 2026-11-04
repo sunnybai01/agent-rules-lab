@@ -104,6 +104,23 @@ function permissionArgs() {
   return ["--permission-mode", "dontAsk", "--allowedTools", ...SCOPED_TOOLS];
 }
 
+// The newest claude CLI on PATH, unless LAB_CLAUDE_BIN names one. An old CLI may not support
+// the model (API error 400), and two installs (Homebrew, npm) can differ.
+function pickClaude() {
+  if (process.env.LAB_CLAUDE_BIN) return process.env.LAB_CLAUDE_BIN;
+  const bins = [...new Set(execSync("which -a claude", { encoding: "utf8" }).split("\n").filter(Boolean))];
+  const versionOf = (bin) => {
+    try {
+      return execFileSync(bin, ["--version"], { encoding: "utf8" }).match(/\d+\.\d+\.\d+/)?.[0] ?? "0.0.0";
+    } catch {
+      return "0.0.0";
+    }
+  };
+  const cmp = (a, b) => a.split(".").map(Number).reduce((d, n, i) => d || n - Number(b.split(".")[i]), 0);
+  return bins.map((bin) => ({ bin, v: versionOf(bin) })).sort((x, y) => cmp(y.v, x.v))[0]?.bin ?? "claude";
+}
+const CLAUDE_BIN = pickClaude();
+
 function runClaude(phase, prompt) {
   const cliArgs = [
     "-p",
@@ -125,7 +142,7 @@ function runClaude(phase, prompt) {
   const transcript = join(outDir, `transcript-${phase}.jsonl`);
   log(`phase ${phase}: claude -p (budget $${task.budgetUsd ?? 5})`);
   return new Promise((done) => {
-    const child = spawn("claude", cliArgs, { cwd: ws, env: cleanEnv(), stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(CLAUDE_BIN, cliArgs, { cwd: ws, env: cleanEnv(), stdio: ["ignore", "pipe", "pipe"] });
     const file = createWriteStream(transcript);
     child.stdout.pipe(file);
     let stderr = "";
@@ -292,7 +309,7 @@ function grade() {
 
 // ---------- Main ----------
 const started = Date.now();
-log(`build workspace ${ws}`);
+log(`build workspace ${ws}; CLI ${CLAUDE_BIN}`);
 buildWorkspace();
 
 const phases = [];
@@ -309,7 +326,12 @@ if (args["no-agent"]) {
 }
 
 // A phase that never reached the model (not signed in, network, budget 0) is not a result.
-const broken = phases.find((p) => p.turns <= 1 && p.costUsd === 0);
+const broken = phases.find(
+  (p) =>
+    /^(API Error|Not logged in|Invalid API key)/.test(p.finalText) ||
+    (p.isError && Object.keys(p.toolCalls).length === 0) ||
+    (p.turns <= 1 && p.costUsd === 0),
+);
 if (broken) {
   log(`INVALID: phase ${broken.phase} did not reach the model: ${broken.finalText.slice(0, 200)} ${broken.stderr.slice(0, 200)}`);
   if (!args.keep) rmSync(ws, { recursive: true, force: true });
