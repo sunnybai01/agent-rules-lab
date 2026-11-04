@@ -35,25 +35,33 @@ const { values: args } = parseArgs({
     keep: { type: "boolean", default: false },
     force: { type: "boolean", default: false },
     "no-agent": { type: "boolean", default: false },
+    "build-only": { type: "boolean", default: false },
     permissions: { type: "string", default: "scoped" },
   },
 });
+
+// A layout with its own story skills (v2) uses them in the spec workflow instead of variants/workflow.
+const OWN_WORKFLOW = existsSync(join(LAB, `variants/layout-${args.layout}`, ".claude/skills/story-start"));
 
 const runIdOf = (a) => `${a.task}-${a.layout}-${a.workflow}-${a.feedback}-r${a.repeat}`;
 
 const task = JSON.parse(readFileSync(join(LAB, "tasks", args.task, "task.json"), "utf8"));
 const runId = runIdOf(args);
-const outDir = join(LAB, "results", "runs", runId);
-if (existsSync(join(outDir, "result.json")) && !args.force) {
+const buildOnly = args["build-only"];
+// --build-only: build the workspace for work on a variant. No agent, no grading, nothing in results/.
+const ws = join(realpathSync(tmpdir()), "agentic-lab", buildOnly ? `build-${runId}` : runId);
+const outDir = buildOnly ? join(ws, ".lab") : join(LAB, "results", "runs", runId);
+if (!buildOnly && existsSync(join(outDir, "result.json")) && !args.force) {
   console.log(`skip ${runId}: result exists (use --force)`);
   process.exit(0);
 }
-rmSync(outDir, { recursive: true, force: true });
-mkdirSync(outDir, { recursive: true });
-const ws = join(realpathSync(tmpdir()), "agentic-lab", runId);
+if (!buildOnly) {
+  rmSync(outDir, { recursive: true, force: true });
+  mkdirSync(outDir, { recursive: true });
+}
 const log = (msg) => {
   console.log(`[${runId}] ${msg}`);
-  appendFileSync(join(outDir, "run.log"), `${new Date().toISOString()} ${msg}\n`);
+  if (!buildOnly) appendFileSync(join(outDir, "run.log"), `${new Date().toISOString()} ${msg}\n`);
 };
 
 // ---------- 1. Workspace ----------
@@ -64,7 +72,15 @@ function buildWorkspace() {
   cpSync(join(LAB, "fixture"), ws, { recursive: true, filter: skip });
   cpSync(join(LAB, "variants/_shared"), ws, { recursive: true });
   cpSync(join(LAB, `variants/layout-${args.layout}`), ws, { recursive: true });
-  if (args.workflow === "spec") {
+  // A layout may add package scripts (layout v2: ids, docs, prcheck, a longer check).
+  const extraScripts = join(ws, "package.scripts.json");
+  if (existsSync(extraScripts)) {
+    const pkg = JSON.parse(readFileSync(join(ws, "package.json"), "utf8"));
+    pkg.scripts = { ...pkg.scripts, ...JSON.parse(readFileSync(extraScripts, "utf8")) };
+    writeFileSync(join(ws, "package.json"), `${JSON.stringify(pkg, null, 2)}\n`);
+    rmSync(extraScripts);
+  }
+  if (args.workflow === "spec" && !OWN_WORKFLOW) {
     cpSync(join(LAB, "variants/workflow"), ws, {
       recursive: true,
       filter: (s) => !s.endsWith("AGENTS.append.md"),
@@ -231,9 +247,21 @@ async function gate() {
     rl.close();
   }
   const spec = readFileSync(join(dir, "spec.md"), "utf8");
-  if (!/Status:\*\*\s*Approved/.test(spec)) {
-    writeFileSync(join(dir, "spec.md"), spec.replace(/(Status:\*\*\s*)[^\n]*/, "$1Approved"));
+  let approved = spec;
+  if (!/Status:\*\*\s*Approved/.test(approved)) approved = approved.replace(/(Status:\*\*\s*)[^\n]*/, "$1Approved");
+  // v2 spec: a design story needs a second person in Approved-by and an answer to each open question.
+  // In auto mode the harness plays a fixed approver; in manual mode the person writes both.
+  if (OWN_WORKFLOW && args.gate !== "manual") {
+    approved = approved.replace(/(Approved-by:\*\*)[^\n]*/, `$1 lab-approver ${new Date().toISOString().slice(0, 10)}`);
+    approved = approved.replace(
+      /^## Open questions[^\n]*\n/m,
+      (h) =>
+        `${h}\n**Answers of the approver (lab-approver, a person):** for each question, take the option that follows the conventions in \`docs/conventions/\` and the module files. Where they say nothing, take the option that this spec proposes. Record each answer under "Local decisions" when you implement.\n`,
+    );
+  } else if (/Approved-by:\*\*\s*(<|$)/m.test(approved)) {
+    approved = approved.replace(/(Approved-by:\*\*)[^\n]*/, `$1 lab-gate ${new Date().toISOString().slice(0, 10)}`);
   }
+  if (approved !== spec) writeFileSync(join(dir, "spec.md"), approved);
   const after = readFileSync(join(dir, "spec.md"), "utf8") + readFileSync(join(dir, "plan.md"), "utf8");
   return {
     gate: args.gate,
@@ -263,6 +291,13 @@ function grade() {
     if (name === "pii") checks.piiErrors = r.pass ? 0 : Number(r.output.match(/failed \((\d+)\)/)?.[1] ?? 1);
   }
   checks.all = ["typecheck", "lint", "test", "arch", "pii"].every((n) => checks[n]);
+  // Checks that only some layouts have (v2: ids, docs). Recorded, not part of `all`, so layouts stay comparable.
+  const scripts = JSON.parse(readFileSync(join(ws, "package.json"), "utf8")).scripts ?? {};
+  for (const name of ["ids", "docs"].filter((n) => scripts[n])) {
+    const r = run(`pnpm -s ${name}`);
+    checks[name] = r.pass;
+    checkLog += `\n===== ${name}: ${r.pass ? "pass" : "FAIL"} =====\n${r.output.slice(-6000)}`;
+  }
   if (task.requiredAc?.length) {
     const r = run(`pnpm -s trace --require ${task.requiredAc.join(",")}`);
     checks.trace = r.pass;
@@ -315,6 +350,10 @@ function grade() {
 const started = Date.now();
 log(`build workspace ${ws}; CLI ${CLAUDE_BIN}`);
 buildWorkspace();
+if (buildOnly) {
+  console.log(ws);
+  process.exit(0);
+}
 
 const phases = [];
 let gateInfo = null;
@@ -322,9 +361,10 @@ if (args["no-agent"]) {
   log("no agent: grading the untouched workspace");
 } else if (args.workflow === "spec") {
   const key = task.storyKey ?? task.id;
-  phases.push(await runClaude("spec", `Use the story-to-spec skill for this story. The story key is ${key}.\n\n${task.prompt}`));
+  const [specSkill, implementSkill] = OWN_WORKFLOW ? ["story-start", "implement"] : ["story-to-spec", "implement-plan"];
+  phases.push(await runClaude("spec", `Use the ${specSkill} skill for this story. The story key is ${key}.\n\n${task.prompt}`));
   gateInfo = await gate();
-  phases.push(await runClaude("implement", `The spec and the plan in docs/specs/${key}/ are approved. Use the implement-plan skill to implement them.`));
+  phases.push(await runClaude("implement", `The spec and the plan in docs/specs/${key}/ are approved. Use the ${implementSkill} skill to implement them.`));
 } else {
   phases.push(await runClaude("main", task.prompt));
 }

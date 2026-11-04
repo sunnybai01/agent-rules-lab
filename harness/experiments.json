@@ -3,5 +3,7 @@
   "E1": { "tasks": ["T1", "T2", "T3", "T6"], "layouts": ["a", "b", "c"], "workflows": ["direct"], "feedback": ["off"], "repeats": 2 },
   "E2": { "tasks": ["T6"], "layouts": ["$best"], "workflows": ["direct", "spec"], "feedback": ["off"], "repeats": 2 },
   "E3": { "tasks": ["T6"], "layouts": ["$best"], "workflows": ["direct"], "feedback": ["off", "on"], "repeats": 2 },
+  "V2": { "tasks": ["T1", "T2", "T3", "T6"], "layouts": ["v2"], "workflows": ["direct", "spec"], "feedback": ["off"], "repeats": 2 },
+  "V21": { "tasks": ["T1", "T2", "T3", "T6"], "layouts": ["v21"], "workflows": ["direct", "spec"], "feedback": ["off"], "repeats": 2 },
   "spare": { "tasks": ["T4", "T5"], "layouts": ["$best"], "workflows": ["direct"], "feedback": ["off"], "repeats": 1 }
 }

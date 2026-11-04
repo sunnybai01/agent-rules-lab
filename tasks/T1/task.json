@@ -2,6 +2,7 @@
   "id": "T1",
   "title": "Add a date of birth to the person",
   "rule": "Personal data metadata on every column (ADR-0011, TD-09)",
+  "storyKey": "AN-901",
   "prompt": "Add a date of birth to the person in the identity module.\n\n- `registerPerson` accepts an optional `dateOfBirth` (ISO date, `YYYY-MM-DD`).\n- The person table gets a column `date_of_birth`.\n- `getPerson` returns `dateOfBirth`, or `null` when it was not given.\n- Reject a date of birth in the future with an error.\n\nWhen you are done, the change must be ready for a pull request.",
   "requiredAc": [],
   "budgetUsd": 4
