@@ -18,7 +18,7 @@ Experiments that choose the documentation architecture and the agent workflow fo
 | [variants/feedback](variants/feedback/) | E3-B: Stop hook that runs `pnpm check` and sends failures back (3 attempts) |
 | [tasks/](tasks/) | T1–T6: `task.json` (prompt), `grader/` (hidden tests, copied in after the run), `rubric.md` |
 | [harness/](harness/) | `run.mjs` (one run), `batch.mjs` (one experiment), `report.mjs` (summary), `experiments.json` (matrix) |
-| [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md` |
+| [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md`, findings: [E1](results/e1-findings.md), [AGB](results/agb-findings.md) |
 
 ## Run
 

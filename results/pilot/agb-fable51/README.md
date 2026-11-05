@@ -13,4 +13,4 @@ The first batch of experiment `AGB` (T1, T2, T3, T6 × layout agb × direct × 2
 | T6 r1 | yes | 5/5 | 2/3 | $1.81 | 41 |
 | T6 r2 | yes | 5/5 | 3/3 | $2.00 | 43 |
 
-In all eight runs the agent used nothing of AGB: no `agb` command, no call to the `ab-knowledge` MCP server, no `/agb-skills:*` command, no commit (so the pre-commit gate never ran). The first turn carried about 3,300 more tokens of context than layout A (the plugin's command list, five MCP tools, the session-start hook).
+In all eight runs the agent used nothing of AGB: no `agb` command, no call to the `ab-knowledge` MCP server, no `/agb-skills:*` command, no commit (so the pre-commit gate never ran). The first turn carried about 3,300 more cache-write tokens than the Opus runs of layout A; on Opus the difference between AGB and A is about 1,400 tokens ([agb-findings.md](../../agb-findings.md)).
