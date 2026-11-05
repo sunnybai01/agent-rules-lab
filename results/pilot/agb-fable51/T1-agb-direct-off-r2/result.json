@@ -1,0 +1,135 @@
+{
+  "runId": "T1-agb-direct-off-r2",
+  "task": "T1",
+  "layout": "agb",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 2,
+  "model": "claude-fable-5-1",
+  "startedAt": "2026-11-05T02:45:37.569Z",
+  "wallMs": 254515,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "stores and returns the date of birth",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null when no date of birth was given",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "rejects a date of birth in the future",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the column date_of_birth exists and is personal data with purpose, owner and retention",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "category is identity",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "docs/adr/0015-person-date-of-birth.md",
+    "docs/adr/README.md",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/person.ts",
+    "packages/core/src/identity/schema.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/kernel/kernel.test.ts",
+    "packages/core/src/kernel/time.ts"
+  ],
+  "docsChanged": [
+    "docs/adr/0015-person-date-of-birth.md",
+    "docs/adr/README.md"
+  ],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 2.51245375,
+  "agentMs": 235917,
+  "turns": 52,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 2.51245375,
+      "durationMs": 235917,
+      "turns": 52,
+      "usage": {
+        "input_tokens": 354,
+        "cache_creation_input_tokens": 72313,
+        "cache_read_input_tokens": 668215,
+        "output_tokens": 17912,
+        "output_tokens_details": {
+          "thinking_tokens": 3780
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 72313,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 32,
+            "output_tokens": 951,
+            "cache_read_input_tokens": 83961,
+            "cache_creation_input_tokens": 968,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 968
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "The change is implemented, verified and committed. Two steps need you because the permission mode blocked them.\n\n**What changed** (commit `91e4bab`, \"feat: add a date of birth to the person record (ADR-0015)\")\n\n- `packages/core/src/identity/service.ts`: `registerPerson` takes an optional `dateOfBirth` as `YYYY-MM-DD`. A malformed or non-existent date throws `InvalidDateOfBirthError`. A date after today's Europe/Berlin business date throws `DateOfBirthInFutureError`. Today is accepted. Validation runs before the insert, so a rejected person is never stored and no event is published.\n- `packages/core/src/identity/person.ts`: `Person` gets `dateOfBirth: string | null`, so `getPerson` returns the value or `null`.\n- `packages/core/src/identity/schema.ts`: nullable `date_of_birth` column of PostgreSQL type `date`, marked as personal data with category, purpose, owner and retention. It is an expand-only migration step.\n- `packages/core/src/kernel/time.ts`: new `isCalendarDate` helper that rejects dates like 30 February.\n- `docs/adr/0015-person-date-of-birth.md` plus a minimal `docs/adr/README.md` index. The repo rules require an ADR before a data model change. ADR numbers 0002 to 0014 are already reserved by the architecture document, so I used 0015. Status is Proposed for the tech lead to accept.\n- Tests: 13 new cases in the identity and kernel suites, including the Berlin date boundary, a leap day, and malformed inputs.\n\n**Verification**\n\n```\npnpm check → typecheck, lint, 27 tests, dependency-cruiser, personal data check: all pass\n```\n\n**What I could not do**\n\n- **Branch.** Both `git checkout -b` and `git branch` were denied, so the commit sits on local `main`. Nothing was pushed. To prepare the pull request, run:\n\n```\ngit branch AN-<key>-person-date-of-birth\ngit reset --hard 9ac33f5\ngit push -u origin AN-<key>-person-date-of-birth\n```\n\n- **Jira.** The Atlassian MCP server is not configured in this session and there is no `.mcp.json`, so I could not search for or create the Story. The branch name and PR title need the AN issue key once it exists. Suggested PR title: `feat: add a date of birth to the person record (AN-<key>)`. The Story should carry labels `R1` and `mod-identity`.\n\n**Assumptions to confirm in review**\n\n- Future is judged by the Europe/Berlin calendar, following the architecture's business date rule, not by UTC.\n- No minimum age check and no update path for the date after registration. The ADR records both as later changes.",
+      "toolCalls": {
+        "Bash": 8,
+        "Read": 20,
+        "Grep": 7,
+        "Glob": 1,
+        "Write": 2,
+        "Edit": 13
+      },
+      "docsRead": [
+        "docs/technical-decisions.md",
+        "docs/architecture.md",
+        "docs/delivery-plan.md"
+      ],
+      "filesReadCount": 20
+    }
+  ]
+}

@@ -40,7 +40,7 @@ Each run:
 2. Runs `claude -p` with `--setting-sources project` and an empty MCP config, so user hooks, plugins and MCP servers do not load. Permissions: `scoped` (default: edits plus an allowlist of shell commands, see `SCOPED_TOOLS` in `run.mjs`) or `--permissions bypass` (only in a sandbox). Each task has a budget cap (`budgetUsd`).
 3. Grades: `pnpm check` parts, traceability, hidden grader (hard and soft). Saves `result.json`, `env.json`, `check.log`, `diff.patch`, transcripts and an empty `review.md`.
 
-A run with a `result.json` is skipped; use `--force` to run it again. `--gate manual` stops the E2 spec workflow at the gate so that a person can edit and approve the spec.
+The model is pinned in `harness/experiments.json` (`defaults.model`); `--model` overrides it, and `env.json` records what ran. A run with a `result.json` is skipped; use `--force` to run it again. `--gate manual` stops the E2 spec workflow at the gate so that a person can edit and approve the spec.
 
 ## Review
 

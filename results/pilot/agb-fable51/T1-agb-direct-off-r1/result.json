@@ -1,0 +1,125 @@
+{
+  "runId": "T1-agb-direct-off-r1",
+  "task": "T1",
+  "layout": "agb",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 1,
+  "model": "claude-fable-5-1",
+  "startedAt": "2026-11-05T02:32:19.229Z",
+  "wallMs": 167669,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "stores and returns the date of birth",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null when no date of birth was given",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "rejects a date of birth in the future",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the column date_of_birth exists and is personal data with purpose, owner and retention",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "category is identity",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/person.ts",
+    "packages/core/src/identity/schema.ts",
+    "packages/core/src/identity/service.ts"
+  ],
+  "docsChanged": [],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 1.7231212500000002,
+  "agentMs": 145018,
+  "turns": 28,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 1.7231212500000002,
+      "durationMs": 145018,
+      "turns": 28,
+      "usage": {
+        "input_tokens": 258,
+        "cache_creation_input_tokens": 55536,
+        "cache_read_input_tokens": 434285,
+        "output_tokens": 10025,
+        "output_tokens_details": {
+          "thinking_tokens": 2027
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 55536,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 32,
+            "output_tokens": 806,
+            "cache_read_input_tokens": 67523,
+            "cache_creation_input_tokens": 629,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 629
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "The date of birth is implemented in the identity module and the full check suite passes. The change is uncommitted on `main`, because the branch creation command was denied by the permission mode.\n\n**What changed** in `packages/core/src/identity/`:\n\n- **Person record.** The person type has a new field for the date of birth. It is a string in the form `YYYY-MM-DD`, or `null`.\n- **Registration.** `registerPerson` takes an optional date of birth. The value must be a real calendar day in ISO form and must not be after today. Today is the business date in Europe/Berlin, taken from the clock dependency, so the rule follows the kernel's calendar convention. A bad value throws the new `InvalidDateOfBirthError`, which the module index exports. Nothing is stored and no event is published when the value is rejected.\n- **Lookup.** `getPerson` returns the stored value, or `null` when none was given. No change was needed there beyond the type.\n- **Table.** The person table gets a nullable `date_of_birth` column of SQL type `date`. Its metadata marks it as personal data in the identity category with a purpose, owner and retention, so the personal data check passes.\n- **Tests.** Six new cases cover storage and lookup, the null default, today as an accepted value, a future date, four malformed inputs, and the no-write-on-rejection behaviour.\n\n**Verification.** Typecheck, Biome lint, Vitest, dependency-cruiser and the personal data check all pass. The test count went from 14 to 20.\n\n**Two repository rules you need to settle before opening the pull request:**\n\n1. **No Jira key.** The atlassian MCP server named in the agent instructions is not configured in this workspace, so I could not find or create an issue. The branch and PR title need an `AN-` key, for example branch `AN-<n>-person-date-of-birth` and title `feat: add date of birth to the person (AN-<n>)`.\n2. **ADR.** The agent instructions say a change to the data model needs an ADR first. This adds a column, so it falls under that rule. The ADR directory does not exist yet and the numbering is still under review, so I did not invent one. Decide whether a small additive column needs an ADR or whether the PR description is enough.\n\nThe git commands to run once you have the key are:\n\n```\ngit checkout -b AN-<n>-person-date-of-birth\ngit add packages/core/src/identity\ngit commit -m \"feat: add date of birth to the person (AN-<n>)\"\n```",
+      "toolCalls": {
+        "Bash": 8,
+        "Read": 9,
+        "Grep": 2,
+        "Edit": 7,
+        "Write": 1
+      },
+      "docsRead": [
+        "docs/technical-decisions.md"
+      ],
+      "filesReadCount": 9
+    }
+  ]
+}

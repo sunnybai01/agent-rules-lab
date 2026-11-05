@@ -1,0 +1,133 @@
+{
+  "runId": "T2-agb-direct-off-r2",
+  "task": "T2",
+  "layout": "agb",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 2,
+  "model": "claude-fable-5-1",
+  "startedAt": "2026-11-05T02:49:52.911Z",
+  "wallMs": 215405,
+  "success": true,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "returns the advisor B20001 with source version and read time",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "returns null for an unknown advisor",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "identity does not import the ERP port or an adapter",
+        "pass": true,
+        "detail": ""
+      }
+    ],
+    "soft": [
+      {
+        "name": "the ERP outage surfaces as an error, not as null",
+        "pass": true,
+        "detail": ""
+      },
+      {
+        "name": "the advisor contract is a Zod schema in erp-port",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": true,
+  "changed": [
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "packages/core/src/identity/advisor.ts",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/integration/index.ts",
+    "packages/core/src/integration/integration.test.ts",
+    "packages/erp-fake/src/erp-fake.test.ts",
+    "packages/erp-fake/src/index.ts",
+    "packages/erp-port/src/index.ts"
+  ],
+  "docsChanged": [],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 2.4495612500000004,
+  "agentMs": 195485,
+  "turns": 53,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 2.4495612500000004,
+      "durationMs": 195485,
+      "turns": 53,
+      "usage": {
+        "input_tokens": 290,
+        "cache_creation_input_tokens": 75459,
+        "cache_read_input_tokens": 534725,
+        "output_tokens": 16076,
+        "output_tokens_details": {
+          "thinking_tokens": 2419
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 75459,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 32,
+            "output_tokens": 1308,
+            "cache_read_input_tokens": 86990,
+            "cache_creation_input_tokens": 1085,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 1085
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "All checks pass: typecheck, lint, 21 tests, dependency-cruiser and the personal data check.\n\n**What I changed**\n\n- `packages/erp-port/src/index.ts`: added the `AdvisorMasterData` Zod contract (advisor number `B` plus five digits, given name, family name, e-mail, active flag, source version) and `readAdvisor` on the port.\n- `packages/erp-fake/src/index.ts`: added `fakeAdvisors` with advisor `B20001` (synthetic data, already the advisor of fake customer `K100001`) and the `readAdvisor` operation, including the outage simulation.\n- `packages/core/src/integration/index.ts`: added `readAdvisor`, which wraps the ERP data with source, source version and read time (T2-D-009). The customer read now shares the same helper.\n- `packages/core/src/identity`: new `Advisor` type, `getAdvisor(advisorNumber)` on the public API, and a required `integration` dependency on `createIdentity`. Identity reaches the ERP only through the integration module (T3-D-005), as the architecture table for the identity module says.\n- `apps/worker/src/index.ts`: `createApp()` passes the integration API into identity, so `app.identity.getAdvisor` works against the fake ERP.\n- Tests in all four places, including `null` for an unknown advisor and the ERP outage path through the worker.\n\n**Not done, and why**\n\n- **Branch and commit.** The shell denied the branch creation, so the change sits uncommitted on `main`. Suggested branch `AN-<key>-identity-get-advisor` and commit `feat: read advisor master data from the ERP (AN-<key>)`.\n- **Jira issue.** The Atlassian MCP server is not available in this session, so I could not search for or create the Story. It belongs under this week's Epic with labels `R0` and `mod-identity`.\n- **ADR.** The repository rules call for an ADR before a contract change, and adding `readAdvisor` to the ERP port is one. The ERP port ADR (ADR-0006, TD-15) is not written yet and no `docs/adr/` folder exists, so I did not invent a number. The pull request should name this so the tech lead can decide whether to fold it into ADR-0006.",
+      "toolCalls": {
+        "Bash": 7,
+        "Read": 28,
+        "Grep": 4,
+        "Edit": 6,
+        "Write": 7
+      },
+      "docsRead": [
+        "docs/technical-decisions.md",
+        "docs/architecture.md",
+        "docs/discovery-baseline.md"
+      ],
+      "filesReadCount": 28
+    }
+  ]
+}

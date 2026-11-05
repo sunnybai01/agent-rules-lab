@@ -21,6 +21,9 @@ import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
 
 const LAB = resolve(import.meta.dirname, "..");
+// The model is pinned, so that runs of different days stay comparable: the CLI's default model
+// changed under us once (the AGB runs of 5 November ran on claude-fable-5-1, see results/pilot).
+const DEFAULT_MODEL = JSON.parse(readFileSync(join(LAB, "harness/experiments.json"), "utf8")).defaults?.model;
 const RUN_TIMEOUT_MS = 40 * 60 * 1000;
 
 const { values: args } = parseArgs({
@@ -180,7 +183,8 @@ function runClaude(phase, prompt) {
     String(task.budgetUsd ?? 5),
     "--no-session-persistence",
   ];
-  if (args.model) cliArgs.push("--model", args.model);
+  const model = args.model ?? DEFAULT_MODEL;
+  if (model) cliArgs.push("--model", model);
   const transcript = join(outDir, `transcript-${phase}.jsonl`);
   log(`phase ${phase}: claude -p (budget $${task.budgetUsd ?? 5})`);
   return new Promise((done) => {
