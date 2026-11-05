@@ -1,0 +1,14 @@
+{
+  "setup": "setup.sh",
+  "pluginDirs": ["${AGB_DIR}/skills/dist/packages/claude-code"],
+  "mcpServers": {
+    "ab-knowledge": { "command": "${ws}/.ab/bin/ab-knowledge-mcp" }
+  },
+  "allowedTools": [
+    "Bash(./.ab/bin/agb check:*)", "Bash(./.ab/bin/agb status:*)", "Bash(./.ab/bin/agb stack:*)",
+    "Bash(./.ab/bin/agb list:*)", "Bash(./.ab/bin/agb report:*)", "Bash(./.ab/bin/agb events:*)",
+    "Bash(.ab/bin/agb check:*)", "Bash(.ab/bin/agb status:*)", "Bash(.ab/bin/agb stack:*)",
+    "Bash(agb check:*)", "Bash(agb status:*)", "Bash(agb stack:*)", "Bash(agb list:*)",
+    "mcp__ab-knowledge__*"
+  ]
+}

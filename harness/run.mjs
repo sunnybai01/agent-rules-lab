@@ -42,6 +42,11 @@ const { values: args } = parseArgs({
 
 // A layout with its own story skills (v2) uses them in the spec workflow instead of variants/workflow.
 const OWN_WORKFLOW = existsSync(join(LAB, `variants/layout-${args.layout}`, ".claude/skills/story-start"));
+// A layout may bring its own tooling (layout agb): lab.json with `setup` (a script run after `git init`,
+// before the baseline commit), `pluginDirs` (--plugin-dir), `mcpServers` and extra `allowedTools`.
+// `${ws}`, `${LAB}`, `${AGB_DIR}` and environment variables are filled in.
+const LAB_CFG_FILE = join(LAB, `variants/layout-${args.layout}`, "lab.json");
+const LAB_CFG = existsSync(LAB_CFG_FILE) ? JSON.parse(readFileSync(LAB_CFG_FILE, "utf8")) : {};
 
 const runIdOf = (a) => `${a.task}-${a.layout}-${a.workflow}-${a.feedback}-r${a.repeat}`;
 
@@ -51,6 +56,15 @@ const buildOnly = args["build-only"];
 // --build-only: build the workspace for work on a variant. No agent, no grading, nothing in results/.
 const ws = join(realpathSync(tmpdir()), "agentic-lab", buildOnly ? `build-${runId}` : runId);
 const outDir = buildOnly ? join(ws, ".lab") : join(LAB, "results", "runs", runId);
+const FILL = { AGB_DIR: resolve(LAB, "../agb"), ...process.env, ws, LAB };
+const fill = (v) =>
+  typeof v === "string"
+    ? v.replace(/\$\{(\w+)\}/g, (_, k) => FILL[k] ?? "")
+    : Array.isArray(v)
+      ? v.map(fill)
+      : v && typeof v === "object"
+        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x)]))
+        : v;
 if (!buildOnly && existsSync(join(outDir, "result.json")) && !args.force) {
   console.log(`skip ${runId}: result exists (use --force)`);
   process.exit(0);
@@ -91,9 +105,16 @@ function buildWorkspace() {
   // Task setup: files that put the workspace in the start state of one task (for example T5's bug).
   const setup = join(LAB, "tasks", args.task, "setup");
   if (existsSync(setup)) cpSync(setup, ws, { recursive: true });
+  // The lab's own files of a layout are not part of the workspace.
+  for (const f of ["lab.json", LAB_CFG.setup].filter(Boolean)) rmSync(join(ws, f), { force: true });
   const sh = (cmd) => execSync(cmd, { cwd: ws, stdio: "pipe", encoding: "utf8" });
   sh("pnpm install --offline --frozen-lockfile");
-  sh("git init -q -b main && git add -A && git -c user.name=lab -c user.email=lab@example.test commit -qm baseline && git tag baseline");
+  sh("git init -q -b main");
+  if (LAB_CFG.setup) {
+    const script = join(LAB, `variants/layout-${args.layout}`, LAB_CFG.setup);
+    execFileSync("bash", [script, ws], { cwd: ws, stdio: "pipe", encoding: "utf8", env: { ...process.env, AGB_DIR: FILL.AGB_DIR } });
+  }
+  sh("git add -A && git -c user.name=lab -c user.email=lab@example.test commit -qm baseline && git tag baseline");
 }
 
 // ---------- 2. Agent ----------
@@ -121,7 +142,7 @@ const SCOPED_TOOLS = [
 ];
 function permissionArgs() {
   if (args.permissions === "bypass") return ["--permission-mode", "bypassPermissions"];
-  return ["--permission-mode", "dontAsk", "--allowedTools", ...SCOPED_TOOLS];
+  return ["--permission-mode", "dontAsk", "--allowedTools", ...SCOPED_TOOLS, ...fill(LAB_CFG.allowedTools ?? [])];
 }
 
 // The newest claude CLI on PATH, unless LAB_CLAUDE_BIN names one. An old CLI may not support
@@ -152,7 +173,8 @@ function runClaude(phase, prompt) {
     "project",
     "--strict-mcp-config",
     "--mcp-config",
-    '{"mcpServers":{}}',
+    JSON.stringify({ mcpServers: fill(LAB_CFG.mcpServers ?? {}) }),
+    ...fill(LAB_CFG.pluginDirs ?? []).flatMap((dir) => ["--plugin-dir", dir]),
     ...permissionArgs(),
     "--max-budget-usd",
     String(task.budgetUsd ?? 5),
