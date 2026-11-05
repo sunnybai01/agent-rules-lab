@@ -16,9 +16,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
+import { agbWorkflow, requestDoc } from "./agb-flow.mjs";
 
 const LAB = resolve(import.meta.dirname, "..");
 // The model is pinned, so that runs of different days stay comparable: the CLI's default model
@@ -40,6 +41,8 @@ const { values: args } = parseArgs({
     "no-agent": { type: "boolean", default: false },
     "build-only": { type: "boolean", default: false },
     permissions: { type: "string", default: "scoped" },
+    // AGB workflow: cost cap of one run in USD, enforced by the watchdog.
+    cap: { type: "string", default: "15" },
   },
 });
 
@@ -71,6 +74,11 @@ const fill = (v) =>
 if (!buildOnly && existsSync(join(outDir, "result.json")) && !args.force) {
   console.log(`skip ${runId}: result exists (use --force)`);
   process.exit(0);
+}
+// The AGB workflow runs every session with an empty CLAUDE_CONFIG_DIR, which has no sign-in.
+if (!buildOnly && args.workflow === "agb" && !process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
+  console.error("The agb workflow needs CLAUDE_CODE_OAUTH_TOKEN (run `claude setup-token`) or ANTHROPIC_API_KEY.");
+  process.exit(1);
 }
 if (!buildOnly) {
   rmSync(outDir, { recursive: true, force: true });
@@ -115,7 +123,20 @@ function buildWorkspace() {
   sh("git init -q -b main");
   if (LAB_CFG.setup) {
     const script = join(LAB, `variants/layout-${args.layout}`, LAB_CFG.setup);
-    execFileSync("bash", [script, ws], { cwd: ws, stdio: "pipe", encoding: "utf8", env: { ...process.env, AGB_DIR: FILL.AGB_DIR } });
+    execFileSync("bash", [script, ws], {
+      cwd: ws,
+      stdio: "pipe",
+      encoding: "utf8",
+      env: { ...process.env, AGB_DIR: FILL.AGB_DIR, LAB_WORKFLOW: args.workflow },
+    });
+  }
+  if (args.workflow === "agb") {
+    // AGB's input is a change request in the repository; it is part of the baseline.
+    const { path, text } = requestDoc(LAB, args.task, task);
+    mkdirSync(join(ws, dirname(path)), { recursive: true });
+    writeFileSync(join(ws, path), text);
+    // AGB's sessions commit, and `asking` writes the git user as the person who answered.
+    sh("git config user.name lab-approver && git config user.email lab@example.test");
   }
   sh("git add -A && git -c user.name=lab -c user.email=lab@example.test commit -qm baseline && git tag baseline");
 }
@@ -165,7 +186,9 @@ function pickClaude() {
 }
 const CLAUDE_BIN = pickClaude();
 
-function runClaude(phase, prompt) {
+// opts (AGB workflow): settingSources, permArgs, budgetUsd, env, onSpawn(child).
+function runClaude(phase, prompt, opts = {}) {
+  const budget = opts.budgetUsd ?? task.budgetUsd ?? 5;
   const cliArgs = [
     "-p",
     prompt,
@@ -173,22 +196,29 @@ function runClaude(phase, prompt) {
     "stream-json",
     "--verbose",
     "--setting-sources",
-    "project",
+    opts.settingSources ?? "project",
     "--strict-mcp-config",
     "--mcp-config",
     JSON.stringify({ mcpServers: fill(LAB_CFG.mcpServers ?? {}) }),
     ...fill(LAB_CFG.pluginDirs ?? []).flatMap((dir) => ["--plugin-dir", dir]),
-    ...permissionArgs(),
+    ...(opts.permArgs ?? permissionArgs()),
     "--max-budget-usd",
-    String(task.budgetUsd ?? 5),
+    String(budget),
     "--no-session-persistence",
   ];
   const model = args.model ?? DEFAULT_MODEL;
   if (model) cliArgs.push("--model", model);
   const transcript = join(outDir, `transcript-${phase}.jsonl`);
-  log(`phase ${phase}: claude -p (budget $${task.budgetUsd ?? 5})`);
+  log(`phase ${phase}: claude -p (budget $${budget})`);
   return new Promise((done) => {
-    const child = spawn(CLAUDE_BIN, cliArgs, { cwd: ws, env: cleanEnv(), stdio: ["ignore", "pipe", "pipe"] });
+    // Own process group, so that a timeout or the AGB cost watchdog stops the whole tree.
+    const child = spawn(CLAUDE_BIN, cliArgs, {
+      cwd: ws,
+      env: opts.env ?? cleanEnv(),
+      stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
+    });
+    opts.onSpawn?.(child);
     const file = createWriteStream(transcript);
     child.stdout.pipe(file);
     let stderr = "";
@@ -197,13 +227,21 @@ function runClaude(phase, prompt) {
     });
     const timer = setTimeout(() => {
       log(`phase ${phase}: timeout, killing`);
-      child.kill("SIGTERM");
+      killGroup(child);
     }, RUN_TIMEOUT_MS);
     child.on("close", (code) => {
       clearTimeout(timer);
       file.end(() => done({ phase, code, stderr: stderr.slice(-2000), ...parseTranscript(transcript) }));
     });
   });
+}
+
+function killGroup(child) {
+  try {
+    process.kill(-child.pid, "SIGTERM");
+  } catch {
+    child.kill("SIGTERM");
+  }
 }
 
 function parseTranscript(path) {
@@ -383,6 +421,7 @@ if (buildOnly) {
 
 const phases = [];
 let gateInfo = null;
+let agb = null;
 if (args["no-agent"]) {
   log("no agent: grading the untouched workspace");
 } else if (args.workflow === "spec") {
@@ -391,6 +430,20 @@ if (args["no-agent"]) {
   phases.push(await runClaude("spec", `Use the ${specSkill} skill for this story. The story key is ${key}.\n\n${task.prompt}`));
   gateInfo = await gate();
   phases.push(await runClaude("implement", `The spec and the plan in docs/specs/${key}/ are approved. Use the ${implementSkill} skill to implement them.`));
+} else if (args.workflow === "agb") {
+  agb = await agbWorkflow({
+    ws,
+    outDir,
+    log,
+    runClaude,
+    killGroup,
+    cleanEnv,
+    claudeBin: CLAUDE_BIN,
+    task,
+    request: requestDoc(LAB, args.task, task).path,
+    capUsd: Number(args.cap),
+    phases,
+  });
 } else {
   phases.push(await runClaude("main", task.prompt));
 }
@@ -409,8 +462,16 @@ if (broken) {
 }
 
 log("grade");
+// AGB's shell allowance is set-up, not the agent's work (gitignored; it fails the Biome check).
+if (agb) rmSync(join(ws, ".claude/settings.local.json"), { force: true });
 const graded = grade();
-const sum = (k) => phases.reduce((n, p) => n + (p[k] ?? 0), 0);
+let agbInfo = null;
+if (agb) {
+  // "Docs updated" means project documents; the files AGB adds are counted on their own.
+  graded.docsChanged = graded.docsChanged.filter((f) => !agb.isAgbPath(f));
+  agbInfo = await agb.afterGrade(graded);
+}
+const sum = (k) => phases.filter((p) => p.phase !== "delivery").reduce((n, p) => n + (p[k] ?? 0), 0);
 const result = {
   runId,
   task: args.task,
@@ -421,11 +482,13 @@ const result = {
   model: phases[0]?.env.model,
   startedAt: new Date(started).toISOString(),
   wallMs: Date.now() - started,
-  success: graded.checks.all && graded.hardPass && (graded.checks.trace ?? true),
+  success: graded.checks.all && graded.hardPass && (graded.checks.trace ?? true) && !agbInfo?.overBudget,
   ...graded,
   gate: gateInfo,
-  humanInterventions: gateInfo ? 1 : 0,
-  costUsd: sum("costUsd"),
+  humanInterventions: agbInfo ? agbInfo.humanInterventions : gateInfo ? 1 : 0,
+  // AGB workflow: the stage and answering sessions plus what `agb run` reports; delivery is apart.
+  costUsd: sum("costUsd") + (agbInfo?.cost.agbRun ?? 0),
+  agb: agbInfo,
   agentMs: sum("durationMs"),
   turns: sum("turns"),
   phases: phases.map(({ env, ...rest }) => rest),

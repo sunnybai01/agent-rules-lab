@@ -18,7 +18,8 @@ node -e '
   cfg.mode = "brownfield";
   fs.writeFileSync(p, `${JSON.stringify(cfg, null, 2)}\n`);
 ' "$WS/.abrc.json"
-# `agb init` writes .claude/settings.local.json (a blanket Bash allowance for `agb run`). The harness
-# does not load local settings and sets its own allowlist; the file is gitignored but fails the
-# fixture's Biome format check, so it would fail every run for a reason that is not the agent's.
-rm -f "$WS/.claude/settings.local.json"
+# `agb init` writes .claude/settings.local.json (a blanket Bash allowance for `agb run`).
+# Direct prompt: the harness does not load local settings and sets its own allowlist, so the file goes.
+# AGB workflow (LAB_WORKFLOW=agb): AGB runs with its own allowance, as its manual says; the harness
+# loads local settings and removes the file before grading (it is gitignored but fails Biome).
+if [ "${LAB_WORKFLOW:-}" != "agb" ]; then rm -f "$WS/.claude/settings.local.json"; fi

@@ -1,6 +1,19 @@
 # AGB 流程测试：设计
 
-日期：2026-11-05。状态：待拍板。上一轮结果见 [results/agb-findings.md](../results/agb-findings.md)。
+日期：2026-11-05。状态：已按推荐方案批准；harness 已实现（[harness/agb-flow.mjs](../harness/agb-flow.mjs)，`--workflow agb`），试点等令牌。上一轮结果见 [results/agb-findings.md](../results/agb-findings.md)。
+
+试点命令（先设好 `CLAUDE_CODE_OAUTH_TOKEN`）：
+
+```bash
+node harness/run.mjs --task T6 --layout agb --workflow agb --keep
+```
+
+和设计的出入：
+
+- 代答会话和阶段会话一样带一句「无人值守」说明：`-p` 模式下没有人能当场回答，问题要写进台账。
+- 阶段会话的权限：编辑放行（`acceptEdits`，和 AGB 自己的执行器一样），shell 用 AGB 的 `settings.local.json`，`AskUserQuestion` 关掉。
+- `agb run` 开跑时工作区不干净（阶段会话没提交完），就带 AGB 自己的 `--allow-dirty`，并记下当时没提交的文件。
+- 单场上限默认 $15（`--cap`），看门狗每 30 秒和每个会话结束时各查一次。
 
 ## 1. 为什么要再测一次
 
