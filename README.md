@@ -1,6 +1,6 @@
 # Agent rules lab
 
-Experiments that choose the documentation architecture and the agent workflow for [provital-platform](../provital-platform). The plan, the questions and the metrics are in [PLAN.md](PLAN.md).
+Experiments that choose the documentation architecture and the agent workflow for [provital-platform](../provital-platform). The plan, the questions and the metrics are in [PLAN.md](PLAN.md). A plain-language walkthrough of how the comparison works, in Chinese, is in [HOW-IT-WORKS.zh.md](HOW-IT-WORKS.zh.md).
 
 ## Layout
 
