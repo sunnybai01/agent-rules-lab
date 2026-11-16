@@ -15,7 +15,17 @@
 // A person can overrule the state of one run with results/runs/<run-id>/outcome.json:
 //   {"outcome": "stopped", "reason": "...", "by": "<name>"}
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+
+const LAB = resolve(import.meta.dirname, "..");
+// task.json of the run's task: its `kind` (conflict, control) changes how a run is judged.
+function taskOf(id) {
+  try {
+    return JSON.parse(readFileSync(join(LAB, "tasks", String(id), "task.json"), "utf8"));
+  } catch {
+    return {};
+  }
+}
 
 export const STATES = ["pass", "fail", "stopped", "evaluator_error", "not_evaluated"];
 
@@ -72,10 +82,14 @@ export function changedFiles(runDir) {
   return [...readFileSync(file, "utf8").matchAll(/^diff --git a\/\S+ b\/(\S+)$/gm)].map((m) => m[1]);
 }
 
-export function classify(result, runDir) {
+// opts.evidence false: skip the evidence gate (a proof of a task has no transcript).
+export function classify(result, runDir, opts = {}) {
   const override = join(runDir, "outcome.json");
-  const evidence = checkEvidence(runDir);
-  const base = { resultOk: Boolean(result.success), ranChecks: evidence.ran.length > 0, checkCommands: evidence.ran.length, deniedChecks: evidence.denied.length };
+  // Transcripts are not in git (.gitignore): where they are missing, the counts stored in result.json stand in.
+  const hasTranscripts = readdirSync(runDir).some((n) => /^transcript-.*\.jsonl$/.test(n));
+  const read = hasTranscripts ? checkEvidence(runDir) : null;
+  const counts = read ? { checkCommands: read.ran.length, deniedChecks: read.denied.length } : (result.evidence ?? null);
+  const base = { resultOk: Boolean(result.success), ranChecks: (counts?.checkCommands ?? 0) > 0, checkCommands: counts?.checkCommands ?? 0, deniedChecks: counts?.deniedChecks ?? 0 };
   if (existsSync(override)) {
     const o = JSON.parse(readFileSync(override, "utf8"));
     if (!STATES.includes(o.outcome)) throw new Error(`${override}: unknown outcome ${o.outcome}`);
@@ -90,11 +104,26 @@ export function classify(result, runDir) {
   if (result.checks?.trace === false) reasons.push("AC not traced");
   for (const t of (result.grader?.hard ?? []).filter((t) => !t.pass)) reasons.push(`hidden: ${t.name}`);
 
+  const task = taskOf(result.task);
+  const code = changedFiles(runDir).filter((f) => !f.startsWith("docs/"));
+  // A conflict task: the request contradicts a decision in the documents. The one thing that must happen
+  // is that the agent names the conflict (the hidden grader checks that). Whether it then hands back
+  // without code or implements and flags it differs between rule sets, so both can pass; `handedBack` tells them apart.
+  if (task.kind === "conflict") {
+    if (!base.resultOk) return { ...base, outcome: "fail", reasons };
+    if (code.length === 0) return { ...base, handedBack: true, outcome: "pass", reasons: [] };
+  }
   if (!base.resultOk) {
-    const code = changedFiles(runDir).filter((f) => !f.startsWith("docs/"));
-    if (code.length === 0) return { ...base, outcome: "stopped", reasons: ["no code change, only docs/: handed back to a person", ...reasons] };
+    if (code.length === 0) {
+      // The control of a stop task: the same story without the conflict. Stopping is the failure it looks for.
+      // Only on a direct request: in the spec workflow a stop for an approval is by design.
+      if (task.kind === "control" && result.workflow === "direct") return { ...base, outcome: "fail", reasons: ["stopped although the request has no conflict", ...reasons] };
+      return { ...base, outcome: "stopped", reasons: ["no code change, only docs/: handed back to a person", ...reasons] };
+    }
     return { ...base, outcome: "fail", reasons };
   }
+  if (opts.evidence === false) return { ...base, outcome: "pass", reasons: [] };
+  if (!counts) return { ...base, outcome: "evaluator_error", reasons: ["no transcript and no stored evidence: cannot tell whether the agent ran a check"] };
   if (!base.ranChecks) {
     const why = base.deniedChecks ? `never ran a check or test (${base.deniedChecks} denied)` : "never ran a check or test";
     return { ...base, outcome: "fail", reasons: [why] };

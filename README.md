@@ -24,7 +24,8 @@ The lab chooses the agent rules for work on **one story** in an existing reposit
 | [variants/workflow](variants/workflow/) | E2-B: spec and plan templates, skills `story-to-spec` and `implement-plan`, subagent `architecture-reviewer` |
 | [variants/feedback](variants/feedback/) | E3-B: Stop hook that runs `pnpm check` and sends failures back (3 attempts) |
 | [tasks/](tasks/) | T1–T6: `task.json` (prompt), `grader/` (hidden tests, copied in after the run), `rubric.md` |
-| [harness/](harness/) | `run.mjs` (one run), `batch.mjs` (one experiment), `report.mjs` (summary), `experiments.json` (matrix) |
+| [tasks/](tasks/) contract | [tasks/README.md](tasks/README.md): what a task consists of, the kinds of task, the proofs, and the task set (set 1: T1–T6; set 2: T7–T15 with T4 and T5) |
+| [harness/](harness/) | `run.mjs` (one run), `batch.mjs` (one experiment), `report.mjs` (summary), `outcome.mjs` (result states), `prove.mjs` (proofs of a task, no model), `experiments.json` (matrix) |
 | [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md`, findings: [E1](results/e1-findings.md) |
 
 ## Run
@@ -39,6 +40,7 @@ node harness/batch.mjs E2 --best c                                 # after E1: s
 node harness/batch.mjs E3 --best c
 node harness/report.mjs --best c                                   # writes results/summary.md
 node harness/run.mjs --task T6 --layout v2 --build-only            # build a workspace only, print its path: for work on a variant
+node harness/prove.mjs T7 T8                                       # prove tasks without a model: untouched, reference solution, shortcut
 ```
 
 Each run:
@@ -59,6 +61,10 @@ After the [Agent Evaluation Protocol](https://agent-eval.ai/#protocol), a failur
 | stopped | only `docs/` changed (spec, plan, ADR): the agent handed back to a person | neither; shown apart |
 | evaluator error | the hidden grader did not load or run, or reported no hard test | neither; never against the variant |
 | not evaluated | the run never reached the model (`invalid.json`) | neither |
+
+Two kinds of task are judged in their own way ([tasks/README.md](tasks/README.md)). A `conflict` task passes when the agent names the conflict, with or without code; a run that names it and changes no code is a pass with `handedBack`, not *stopped*. A `control` task on a direct request fails when the agent hands back without code.
+
+Transcripts are not in git (`.gitignore`), so `result.json` keeps the counts behind the evidence gate in `evidence`; the report uses the transcripts where they exist and these counts where they do not.
 
 A person can overrule one run with `results/runs/<run-id>/outcome.json`: `{"outcome": "stopped", "reason": "...", "by": "<name>"}`.
 

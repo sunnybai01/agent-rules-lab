@@ -1,0 +1,11 @@
+{
+  "id": "T14",
+  "title": "Ask for a call back on a chosen day",
+  "rule": "A repeated request gives the same result, also later (docs/conventions/events.md: idempotent); the lookup of the first result comes before any check that depends on the day",
+  "kind": "edge",
+  "source": "anifit-platform #247 (AN-147, review round 1): the lookup of the existing subscription came after the validation, so a repeated or replayed event failed once the date window had moved. No check saw it.",
+  "storyKey": "AN-914",
+  "prompt": "A person can ask for a call back on a day of their choice.\n\n- Add `requestCallback({ requestId, personId, date })` to the public API of the journey module. It creates a task of kind `callback` with the title `Call back` and the due date `date`, and returns it.\n- `date` is a business date (`YYYY-MM-DD`). It must be from tomorrow to 14 days after today. Anything else fails with `CallbackDateError`.\n- The shop may send the same request again, for example after a timeout. A call with a `requestId` that was used before returns the task of the first call and creates nothing.\n- `createApp()` in `apps/worker` must expose it as `app.journey.requestCallback`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 4
+}

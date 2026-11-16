@@ -1,0 +1,214 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..01d398f 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -23,6 +23,7 @@ export function createApp(options: AppOptions = {}) {
+   const journeyApi = journey.createJourney({
+     repo: new journey.InMemoryTaskRepository(),
+     bus,
++    identity: identityApi,
+     clock,
+   });
+   return { bus, clock, integration: integrationApi, identity: identityApi, journey: journeyApi };
+diff --git a/packages/core/src/identity/person.ts b/packages/core/src/identity/person.ts
+index c418b92..39c77c0 100644
+--- a/packages/core/src/identity/person.ts
++++ b/packages/core/src/identity/person.ts
+@@ -8,6 +8,8 @@ export interface Person {
+   readonly erpCustomerNumber: string | null;
+   readonly brand: string;
+   readonly createdAt: string;
++  /** UTC time of the completed welcome call, or null. */
++  readonly welcomedAt: string | null;
+ }
+ 
+ export type PersonRegistered = DomainEvent<
+@@ -18,6 +20,7 @@ export type PersonRegistered = DomainEvent<
+ /** Storage of the `identity` schema. Production uses Drizzle; tests use the in-memory store. */
+ export interface PersonRepository {
+   insert(person: Person): Promise<void>;
++  update(person: Person): Promise<void>;
+   findById(id: string): Promise<Person | null>;
+   findByEmail(email: string): Promise<Person | null>;
+ }
+@@ -29,6 +32,10 @@ export class InMemoryPersonRepository implements PersonRepository {
+     this.rows.set(person.id, person);
+   }
+ 
++  async update(person: Person): Promise<void> {
++    this.rows.set(person.id, person);
++  }
++
+   async findById(id: string): Promise<Person | null> {
+     return this.rows.get(id) ?? null;
+   }
+diff --git a/packages/core/src/identity/schema.ts b/packages/core/src/identity/schema.ts
+index 2e5a8bf..f932f2a 100644
+--- a/packages/core/src/identity/schema.ts
++++ b/packages/core/src/identity/schema.ts
+@@ -12,6 +12,7 @@ export const persons = withDataMeta(
+     erpCustomerNumber: text("erp_customer_number").unique(),
+     brand: text("brand").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    welcomedAt: timestamp("welcomed_at", { withTimezone: true }),
+   }),
+   {
+     id: notPersonal,
+@@ -39,5 +40,12 @@ export const persons = withDataMeta(
+     erpCustomerNumber: notPersonal,
+     brand: notPersonal,
+     createdAt: notPersonal,
++    welcomedAt: {
++      personal: true,
++      category: "other",
++      purpose: "Show head office who has had the welcome call",
++      owner: "identity",
++      retention: "account lifetime + 3 years",
++    },
+   },
+ );
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..11df421 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -36,6 +36,7 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+         erpCustomerNumber: null,
+         brand: input.brand ?? "provital",
+         createdAt: now.toISOString(),
++        welcomedAt: null,
+       };
+       await repo.insert(person);
+       const event: PersonRegistered = {
+@@ -48,6 +49,12 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+       return person;
+     },
+ 
++    async markWelcomed(personId: string, at: string): Promise<void> {
++      const person = await repo.findById(personId);
++      if (!person || person.welcomedAt) return;
++      await repo.update({ ...person, welcomedAt: at });
++    },
++
+     async getPerson(id: string): Promise<Person | null> {
+       return repo.findById(id);
+     },
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..53a37a5 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,4 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+-export { createJourney } from "./service";
++export { createJourney, TaskNotFoundError } from "./service";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/schema.ts b/packages/core/src/journey/schema.ts
+index 38d8abf..44e7b6c 100644
+--- a/packages/core/src/journey/schema.ts
++++ b/packages/core/src/journey/schema.ts
+@@ -11,6 +11,7 @@ export const tasks = withDataMeta(
+     title: text("title").notNull(),
+     dueDate: text("due_date").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    completedAt: timestamp("completed_at", { withTimezone: true }),
+   }),
+   {
+     id: notPersonal,
+@@ -19,5 +20,6 @@ export const tasks = withDataMeta(
+     title: notPersonal,
+     dueDate: notPersonal,
+     createdAt: notPersonal,
++    completedAt: notPersonal,
+   },
+ );
+diff --git a/packages/core/src/journey/service.ts b/packages/core/src/journey/service.ts
+index d734128..332c927 100644
+--- a/packages/core/src/journey/service.ts
++++ b/packages/core/src/journey/service.ts
+@@ -1,3 +1,4 @@
++import type { Identity } from "../identity";
+ import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Task, TaskRepository } from "./task";
+ 
+@@ -8,13 +9,21 @@ export interface CreateTaskInput {
+   dueDate?: string;
+ }
+ 
++export class TaskNotFoundError extends Error {
++  constructor() {
++    super("No task with this ID");
++    this.name = "TaskNotFoundError";
++  }
++}
++
+ export interface JourneyDeps {
+   repo: TaskRepository;
+   bus: EventBus;
++  identity?: Pick<Identity, "markWelcomed">;
+   clock?: Clock;
+ }
+ 
+-export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
++export function createJourney({ repo, identity, clock = systemClock }: JourneyDeps) {
+   return {
+     async createTask(input: CreateTaskInput): Promise<Task> {
+       const now = clock.now();
+@@ -25,11 +34,23 @@ export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+         title: input.title,
+         dueDate: input.dueDate ?? businessDate(now),
+         createdAt: now.toISOString(),
++        completedAt: null,
+       };
+       await repo.insert(task);
+       return task;
+     },
+ 
++    async completeTask(taskId: string): Promise<Task> {
++      const task = await repo.findById(taskId);
++      if (!task) throw new TaskNotFoundError();
++      if (task.completedAt) return task;
++      const completedAt = clock.now().toISOString();
++      const completed: Task = { ...task, completedAt };
++      await repo.update(completed);
++      if (task.kind === "welcome-call") await identity?.markWelcomed(task.personId, completedAt);
++      return completed;
++    },
++
+     async listTasks(personId: string): Promise<Task[]> {
+       return repo.listByPerson(personId);
+     },
+diff --git a/packages/core/src/journey/task.ts b/packages/core/src/journey/task.ts
+index b50d2fd..f2ec4ee 100644
+--- a/packages/core/src/journey/task.ts
++++ b/packages/core/src/journey/task.ts
+@@ -6,10 +6,14 @@ export interface Task {
+   /** Business date, YYYY-MM-DD in Europe/Berlin. */
+   readonly dueDate: string;
+   readonly createdAt: string;
++  /** UTC time of the completion, or null while the task is open. */
++  readonly completedAt: string | null;
+ }
+ 
+ export interface TaskRepository {
+   insert(task: Task): Promise<void>;
++  findById(id: string): Promise<Task | null>;
++  update(task: Task): Promise<void>;
+   listByPerson(personId: string): Promise<Task[]>;
+ }
+ 
+@@ -20,6 +24,15 @@ export class InMemoryTaskRepository implements TaskRepository {
+     this.rows.push(task);
+   }
+ 
++  async findById(id: string): Promise<Task | null> {
++    return this.rows.find((t) => t.id === id) ?? null;
++  }
++
++  async update(task: Task): Promise<void> {
++    const index = this.rows.findIndex((t) => t.id === task.id);
++    if (index >= 0) this.rows[index] = task;
++  }
++
+   async listByPerson(personId: string): Promise<Task[]> {
+     return this.rows.filter((t) => t.personId === personId);
+   }

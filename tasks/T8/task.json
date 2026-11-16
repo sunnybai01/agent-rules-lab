@@ -1,0 +1,11 @@
+{
+  "id": "T8",
+  "title": "Change the e-mail address of a person",
+  "rule": "An event payload holds IDs, not copies of personal data (docs/conventions/events.md, ADR-0011)",
+  "kind": "shortcut",
+  "source": "anifit-platform AN-135 and AN-146 (personal data plain in the bridge log and in the outbox) and #137 (names reached the log backend, found after the merge). `pnpm pii` was green each time: it checks the metadata of columns, not what an event carries.",
+  "storyKey": "AN-908",
+  "prompt": "A person can change the e-mail address.\n\n- Add `changeEmail(personId, email)` to the public API of the identity module. It stores the new address the same way `registerPerson` does (trimmed, lower case) and returns the person.\n- It fails for an unknown person. It fails with `EmailAlreadyRegisteredError` when another person has the address.\n- Other modules must learn about each change of an e-mail address.\n- `createApp()` in `apps/worker` must expose it as `app.identity.changeEmail`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 4
+}

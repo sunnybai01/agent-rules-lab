@@ -116,5 +116,9 @@
       "docsRead": [],
       "filesReadCount": 13
     }
-  ]
+  ],
+  "evidence": {
+    "checkCommands": 1,
+    "deniedChecks": 0
+  }
 }

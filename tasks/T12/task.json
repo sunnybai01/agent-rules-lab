@@ -1,0 +1,11 @@
+{
+  "id": "T12",
+  "title": "Plan a follow-up call some working days ahead",
+  "rule": "Time comes from the injected clock, never from `new Date()` in a rule; a business date uses the Europe/Berlin calendar; tests use a fixed clock (kernel AGENTS.md, docs/conventions/data.md and testing.md)",
+  "kind": "edge",
+  "source": "anifit-platform #238: a test asked at a fixed time while the code used the real clock; some hours after the merge it failed on dev (fixed in #249). AN-147: the reviewer found a handler that passed no `now`, with a test on a fixed date (\"the test breaks in 5 days\").",
+  "storyKey": "AN-912",
+  "prompt": "Advisors plan a follow-up call a few working days ahead.\n\n- Add `createFollowUp(personId, workingDays)` to the public API of the journey module. It creates a task of kind `follow-up` with the title `Follow-up call` and returns it.\n- The due date is `workingDays` working days after today. Today is the business date. Working days are Monday to Friday; public holidays are treated like any other day.\n- `workingDays` is a whole number from 1 to 30. Anything else fails.\n- `createApp()` in `apps/worker` must expose it as `app.journey.createFollowUp`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 4
+}

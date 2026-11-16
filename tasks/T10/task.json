@@ -1,0 +1,12 @@
+{
+  "id": "T10",
+  "title": "Read the payment options of a customer from the ERP",
+  "rule": "The control of T9: the same story with a read that T2 section 4 allows. Only integration reaches the ERP, through the port (T3-D-005)",
+  "kind": "control",
+  "pair": "T9",
+  "source": "Constructed as the pair of T9.",
+  "storyKey": "AN-910",
+  "prompt": "The checkout needs the payment options of a customer from the ERP.\n\n- Add `getPaymentOptions(customerNumber)` to the public API of the identity module.\n- It returns `{ customerNumber, methods, sourceVersion, readAt }` for a customer that exists in the ERP, or `null` when the ERP has no such customer. `methods` is a list of `invoice`, `directDebit` and `card`.\n- The ERP has the payment options per customer number (`K` and 6 digits).\n- Add fake data: customer `K100001` has `invoice` and `card`.\n- `createApp()` in `apps/worker` must expose it as `app.identity.getPaymentOptions`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 5
+}

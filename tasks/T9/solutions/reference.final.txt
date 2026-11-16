@@ -1,0 +1,9 @@
+I did not build this, because the request contradicts a Discovery decision.
+
+`getAdvisor` as asked reads the ERP on each call. T3-D-007 says ERP data is read from a read copy that a schedule or an event writes, never a user request. T2 section 4 lists the only synchronous reads (payment provider, address validation, payment options, vouchers, order history); advisor master data is not one of them.
+
+Two ways forward, for a person to choose:
+1. A read copy of the advisors in `erp_copy`, filled by a job; `getAdvisor` reads the copy.
+2. A change record that allows this synchronous read, approved before the code.
+
+Nothing is changed in the code.

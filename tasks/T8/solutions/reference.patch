@@ -1,0 +1,91 @@
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..c57a932 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,4 @@
+-export type { Person, PersonRegistered, PersonRepository } from "./person";
++export type { Person, PersonEmailChanged, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+-export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export { createIdentity, EmailAlreadyRegisteredError, PersonNotFoundError } from "./service";
+diff --git a/packages/core/src/identity/person.ts b/packages/core/src/identity/person.ts
+index c418b92..65c1108 100644
+--- a/packages/core/src/identity/person.ts
++++ b/packages/core/src/identity/person.ts
+@@ -15,9 +15,12 @@ export type PersonRegistered = DomainEvent<
+   { personId: string; brand: string }
+ >;
+ 
++export type PersonEmailChanged = DomainEvent<"identity.person-email-changed", { personId: string }>;
++
+ /** Storage of the `identity` schema. Production uses Drizzle; tests use the in-memory store. */
+ export interface PersonRepository {
+   insert(person: Person): Promise<void>;
++  update(person: Person): Promise<void>;
+   findById(id: string): Promise<Person | null>;
+   findByEmail(email: string): Promise<Person | null>;
+ }
+@@ -29,6 +32,10 @@ export class InMemoryPersonRepository implements PersonRepository {
+     this.rows.set(person.id, person);
+   }
+ 
++  async update(person: Person): Promise<void> {
++    this.rows.set(person.id, person);
++  }
++
+   async findById(id: string): Promise<Person | null> {
+     return this.rows.get(id) ?? null;
+   }
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..f449ef6 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,5 +1,5 @@
+ import { type Clock, type EventBus, newId, systemClock } from "../kernel";
+-import type { Person, PersonRegistered, PersonRepository } from "./person";
++import type { Person, PersonEmailChanged, PersonRegistered, PersonRepository } from "./person";
+ 
+ export interface RegisterPersonInput {
+   email: string;
+@@ -15,6 +15,13 @@ export class EmailAlreadyRegisteredError extends Error {
+   }
+ }
+ 
++export class PersonNotFoundError extends Error {
++  constructor() {
++    super("No person with this ID");
++    this.name = "PersonNotFoundError";
++  }
++}
++
+ export interface IdentityDeps {
+   repo: PersonRepository;
+   bus: EventBus;
+@@ -48,6 +55,26 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+       return person;
+     },
+ 
++    /** Changes the e-mail address. Other modules learn about it through `identity.person-email-changed`. */
++    async changeEmail(personId: string, newEmail: string): Promise<Person> {
++      const person = await repo.findById(personId);
++      if (!person) throw new PersonNotFoundError();
++      const email = newEmail.trim().toLowerCase();
++      if (email === person.email) return person;
++      if (await repo.findByEmail(email)) throw new EmailAlreadyRegisteredError();
++      const changed: Person = { ...person, email };
++      await repo.update(changed);
++      const now = clock.now();
++      const event: PersonEmailChanged = {
++        type: "identity.person-email-changed",
++        id: newId(now),
++        occurredAt: now.toISOString(),
++        payload: { personId: person.id },
++      };
++      await bus.publish(event);
++      return changed;
++    },
++
+     async getPerson(id: string): Promise<Person | null> {
+       return repo.findById(id);
+     },

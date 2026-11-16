@@ -1,0 +1,11 @@
+{
+  "id": "T11",
+  "title": "Reject unusable e-mail addresses",
+  "rule": "Done means checked: run `pnpm check` before you say the change is ready, and fix what it shows (AGENTS.md \"When you finish\"; in the real platform docs/agent/work.md section 4)",
+  "kind": "evidence",
+  "source": "anifit-platform #211 (round one: check:arch and check:docs failed), #200 (\"I did not run it locally\", then the fix #205), and this lab: layout A in T1 never ran the checks and left a lint error. The task plants a test in another unit that the change breaks, so only an agent that runs all checks sees it.",
+  "storyKey": "AN-911",
+  "prompt": "Support sees persons with e-mail addresses that cannot receive mail.\n\n- `registerPerson` in the identity module rejects an e-mail address that has no `@`, more than one `@`, an empty part before the `@`, a space, or no dot in the part after the `@`. It fails with `InvalidEmailError`.\n- Every other address works as before.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 3
+}
