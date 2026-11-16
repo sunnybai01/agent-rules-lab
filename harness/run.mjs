@@ -19,8 +19,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
+import { classify } from "./outcome.mjs";
 
 const LAB = resolve(import.meta.dirname, "..");
+// The model is pinned, so that runs of different days stay comparable: the CLI's default model
+// changed under us once (a batch of 5 November 2026 ran on claude-fable-5-1 by mistake).
+const DEFAULT_MODEL = JSON.parse(readFileSync(join(LAB, "harness/experiments.json"), "utf8")).defaults?.model;
 const RUN_TIMEOUT_MS = 40 * 60 * 1000;
 
 const { values: args } = parseArgs({
@@ -158,7 +162,8 @@ function runClaude(phase, prompt) {
     String(task.budgetUsd ?? 5),
     "--no-session-persistence",
   ];
-  if (args.model) cliArgs.push("--model", args.model);
+  const model = args.model ?? DEFAULT_MODEL;
+  if (model) cliArgs.push("--model", model);
   const transcript = join(outDir, `transcript-${phase}.jsonl`);
   log(`phase ${phase}: claude -p (budget $${task.budgetUsd ?? 5})`);
   return new Promise((done) => {
@@ -377,7 +382,21 @@ const broken = phases.find(
     (p.turns <= 1 && p.costUsd === 0),
 );
 if (broken) {
-  log(`INVALID: phase ${broken.phase} did not reach the model: ${broken.finalText.slice(0, 200)} ${broken.stderr.slice(0, 200)}`);
+  const reason = `phase ${broken.phase} did not reach the model: ${broken.finalText.slice(0, 200)} ${broken.stderr.slice(0, 200)}`.trim();
+  log(`INVALID: ${reason}`);
+  // Kept as "not evaluated" (harness/outcome.mjs), not dropped. No result.json, so batch.mjs runs it again.
+  writeFileSync(
+    join(outDir, "invalid.json"),
+    JSON.stringify(
+      {
+        runId, task: args.task, layout: args.layout, workflow: args.workflow, feedback: args.feedback, repeat: Number(args.repeat),
+        model: args.model ?? DEFAULT_MODEL, startedAt: new Date(started).toISOString(), outcome: "not_evaluated", reason,
+        costUsd: phases.reduce((n, p) => n + (p.costUsd ?? 0), 0),
+      },
+      null,
+      2,
+    ),
+  );
   if (!args.keep) rmSync(ws, { recursive: true, force: true });
   process.exit(2);
 }
@@ -405,6 +424,9 @@ const result = {
   phases: phases.map(({ env, ...rest }) => rest),
 };
 writeFileSync(join(outDir, "env.json"), JSON.stringify(phases[0]?.env ?? {}, null, 2));
+// The protocol state of the run (pass, fail, stopped, evaluator_error): harness/outcome.mjs.
+// report.mjs derives it again from the files, so this copy is for reading one run.
+result.outcome = classify(result, outDir);
 writeFileSync(join(outDir, "result.json"), JSON.stringify(result, null, 2));
 const rubric = readFileSync(join(LAB, "tasks", args.task, "rubric.md"), "utf8");
 writeFileSync(
@@ -412,4 +434,4 @@ writeFileSync(
   `${rubric}\nReplace each [ ] with a score [0], [1] or [2]. Read diff.patch and the final message in result.json.\n\nReviewer:\nNotes:\n`,
 );
 if (!args.keep) rmSync(ws, { recursive: true, force: true });
-log(`done: success=${result.success} hard=${graded.hardPass} checks=${graded.checks.all} cost=$${result.costUsd.toFixed(2)} turns=${result.turns}`);
+log(`done: outcome=${result.outcome.outcome} success=${result.success} hard=${graded.hardPass} checks=${graded.checks.all} cost=$${result.costUsd.toFixed(2)} turns=${result.turns}`);

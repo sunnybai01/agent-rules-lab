@@ -19,6 +19,7 @@ const { values: opts, positionals } = parseArgs({
 });
 const name = positionals[0];
 const exp = JSON.parse(readFileSync(join(LAB, "harness/experiments.json"), "utf8"))[name];
+if (name === "defaults") throw new Error("defaults is not an experiment");
 if (!exp) throw new Error(`Unknown experiment ${name}`);
 
 export function matrix(e, best) {

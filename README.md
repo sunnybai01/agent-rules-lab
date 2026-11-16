@@ -1,6 +1,14 @@
 # Agent rules lab
 
-Experiments that choose the documentation architecture and the agent workflow for [provital-platform](../provital-platform). The plan, the questions and the metrics are in [PLAN.md](PLAN.md).
+Experiments that choose the documentation architecture and the agent workflow for [provital-platform](../provital-platform). The plan, the questions and the metrics are in [PLAN.md](PLAN.md). A plain-language walkthrough of how the comparison works, in Chinese, is in [HOW-IT-WORKS.zh.md](HOW-IT-WORKS.zh.md).
+
+## Scope and status
+
+The lab chooses the agent rules for work on **one story** in an existing repository. A task is a story; the tasks are a sample of the real work, not the target. It does not evaluate a system that runs a whole project from a PRD to delivery.
+
+- Status, weak points of the task set and the next phase: [PLAN.md, sections 9 and 10](PLAN.md).
+- **AGB is no longer in this repository** (16 November 2026): the layout, the workflow, the design and the runs were removed to keep the lab on the story level. The reasons, what the runs showed, and how a system-level evaluation would be set up later are in [PLAN.md, section 11](PLAN.md). The removed files are in the git history (last commit with them: `b061276`).
+- Every result so far is directional, not firm: see [Result states](#result-states).
 
 ## Layout
 
@@ -17,7 +25,7 @@ Experiments that choose the documentation architecture and the agent workflow fo
 | [variants/feedback](variants/feedback/) | E3-B: Stop hook that runs `pnpm check` and sends failures back (3 attempts) |
 | [tasks/](tasks/) | T1–T6: `task.json` (prompt), `grader/` (hidden tests, copied in after the run), `rubric.md` |
 | [harness/](harness/) | `run.mjs` (one run), `batch.mjs` (one experiment), `report.mjs` (summary), `experiments.json` (matrix) |
-| [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md` |
+| [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md`, findings: [E1](results/e1-findings.md) |
 
 ## Run
 
@@ -38,8 +46,25 @@ Each run:
 1. Builds a workspace in `$TMPDIR/agentic-lab/<run-id>` (outside the lab, so no lab file is found by CLAUDE.md discovery): fixture + shared docs + overlays, `pnpm install --offline`, git commit and tag `baseline`.
 2. Runs `claude -p` with `--setting-sources project` and an empty MCP config, so user hooks, plugins and MCP servers do not load. Permissions: `scoped` (default: edits plus an allowlist of shell commands, see `SCOPED_TOOLS` in `run.mjs`) or `--permissions bypass` (only in a sandbox). Each task has a budget cap (`budgetUsd`).
 3. Grades: `pnpm check` parts, traceability, hidden grader (hard and soft). Saves `result.json`, `env.json`, `check.log`, `diff.patch`, transcripts and an empty `review.md`.
+4. Sets the run's state with [harness/outcome.mjs](harness/outcome.mjs). A run that never reaches the model writes `invalid.json` instead of `result.json`: it is kept as *not evaluated* and run again by the next batch.
 
-A run with a `result.json` is skipped; use `--force` to run it again. `--gate manual` stops the E2 spec workflow at the gate so that a person can edit and approve the spec.
+## Result states
+
+After the [Agent Evaluation Protocol](https://agent-eval.ai/#protocol), a failure of the agent, an error of the grader and a run that could not be judged are kept apart. `report.mjs` derives the state of every run from its files, so old runs are classified like new ones without running them again.
+
+| State | Meaning | Counted as |
+|---|---|---|
+| pass | `pnpm check`, hidden hard tests and AC trace pass, **and** the agent ran a check or test itself (a denied command does not count) | success |
+| fail | anything else in which the agent changed code; a right result without that evidence is a fail | failure |
+| stopped | only `docs/` changed (spec, plan, ADR): the agent handed back to a person | neither; shown apart |
+| evaluator error | the hidden grader did not load or run, or reported no hard test | neither; never against the variant |
+| not evaluated | the run never reached the model (`invalid.json`) | neither |
+
+A person can overrule one run with `results/runs/<run-id>/outcome.json`: `{"outcome": "stopped", "reason": "...", "by": "<name>"}`.
+
+`summary.md` reports success as pass / (pass + fail) with a 95% Wilson interval, the old definition as *Result only*, cost per successful task (all spend of the group, failed and stopped runs included, divided by the passes; undefined with no pass), and a grade per experiment: **firm** only with holdout tasks (`"holdout": true` in `experiments.json`) and intervals that do not overlap, otherwise **directional**. The findings file ([E1](results/e1-findings.md)) was written with the old definition of success.
+
+The model is pinned in `harness/experiments.json` (`defaults.model`); `--model` overrides it, and `env.json` records what ran. A run with a `result.json` is skipped; use `--force` to run it again. `--gate manual` stops the E2 spec workflow at the gate so that a person can edit and approve the spec.
 
 ## Review
 
