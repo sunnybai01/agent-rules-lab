@@ -198,5 +198,9 @@
       ],
       "filesReadCount": 2
     }
-  ]
+  ],
+  "evidence": {
+    "checkCommands": 7,
+    "deniedChecks": 1
+  }
 }

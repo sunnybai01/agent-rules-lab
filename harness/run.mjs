@@ -41,6 +41,9 @@ const { values: args } = parseArgs({
     "no-agent": { type: "boolean", default: false },
     "build-only": { type: "boolean", default: false },
     permissions: { type: "string", default: "scoped" },
+    // Proof of a task (tasks/README.md, section 4): no agent; apply tasks/<id>/solutions/<name>.patch
+    // (and <name>.final.txt as the agent's last message), grade, print one PROOF line. "none" applies nothing.
+    solution: { type: "string" },
   },
 });
 
@@ -53,9 +56,15 @@ const task = JSON.parse(readFileSync(join(LAB, "tasks", args.task, "task.json"),
 const runId = runIdOf(args);
 const buildOnly = args["build-only"];
 // --build-only: build the workspace for work on a variant. No agent, no grading, nothing in results/.
-const ws = join(realpathSync(tmpdir()), "agentic-lab", buildOnly ? `build-${runId}` : runId);
-const outDir = buildOnly ? join(ws, ".lab") : join(LAB, "results", "runs", runId);
-if (!buildOnly && existsSync(join(outDir, "result.json")) && !args.force) {
+const proof = args.solution;
+const ws = join(
+  realpathSync(tmpdir()),
+  "agentic-lab",
+  buildOnly ? `build-${runId}` : proof ? `proof-${args.task}-${args.layout}-${proof}` : runId,
+);
+// A proof leaves nothing in results/: its files go beside the workspace and are removed at the end.
+const outDir = buildOnly ? join(ws, ".lab") : proof ? `${ws}.out` : join(LAB, "results", "runs", runId);
+if (!buildOnly && !proof && existsSync(join(outDir, "result.json")) && !args.force) {
   console.log(`skip ${runId}: result exists (use --force)`);
   process.exit(0);
 }
@@ -285,7 +294,7 @@ function run(cmd, cwd = ws) {
   }
 }
 
-function grade() {
+function grade(finalText = "") {
   const checks = {};
   let checkLog = "";
   for (const name of ["typecheck", "lint", "test", "arch", "pii"]) {
@@ -319,6 +328,8 @@ function grade() {
   const graderSrc = join(LAB, "tasks", args.task, "grader");
   const grader = { hard: [], soft: [] };
   cpSync(graderSrc, join(ws, "grader"), { recursive: true });
+  // The agent's last message of each phase, for a grader that must see what the agent said (stop tasks).
+  writeFileSync(join(ws, "grader/final.txt"), finalText);
   if (readdirSync(graderSrc).some((f) => f.endsWith(".test.ts"))) {
     cpSync(join(LAB, "tasks/vitest.grader.config.ts"), join(ws, "grader/vitest.config.ts"));
     run("pnpm exec vitest run --config grader/vitest.config.ts --reporter=json --outputFile=grader/out.json");
@@ -362,7 +373,19 @@ if (buildOnly) {
 
 const phases = [];
 let gateInfo = null;
-if (args["no-agent"]) {
+let solutionFinal = "";
+if (proof) {
+  const dir = join(LAB, "tasks", args.task, "solutions");
+  const patch = join(dir, `${proof}.patch`);
+  const final = join(dir, `${proof}.final.txt`);
+  if (proof !== "none" && !existsSync(patch) && !existsSync(final)) {
+    console.error(`No solution ${proof}: ${patch} or ${final}`);
+    process.exit(1);
+  }
+  if (existsSync(patch)) execFileSync("git", ["apply", "--whitespace=nowarn", patch], { cwd: ws, stdio: "pipe" });
+  if (existsSync(final)) solutionFinal = readFileSync(final, "utf8");
+  log(`proof: solution ${proof}`);
+} else if (args["no-agent"]) {
   log("no agent: grading the untouched workspace");
 } else if (args.workflow === "spec") {
   const key = task.storyKey ?? task.id;
@@ -402,7 +425,7 @@ if (broken) {
 }
 
 log("grade");
-const graded = grade();
+const graded = grade(proof ? solutionFinal : phases.map((p) => p.finalText).filter(Boolean).join("\n\n"));
 const sum = (k) => phases.reduce((n, p) => n + (p[k] ?? 0), 0);
 const result = {
   runId,
@@ -426,7 +449,10 @@ const result = {
 writeFileSync(join(outDir, "env.json"), JSON.stringify(phases[0]?.env ?? {}, null, 2));
 // The protocol state of the run (pass, fail, stopped, evaluator_error): harness/outcome.mjs.
 // report.mjs derives it again from the files, so this copy is for reading one run.
-result.outcome = classify(result, outDir);
+// A proof has no transcript, so it is judged without the evidence gate.
+result.outcome = classify(result, outDir, { evidence: !proof });
+// The counts behind the evidence gate, kept in result.json because transcripts are not in git.
+result.evidence = { checkCommands: result.outcome.checkCommands, deniedChecks: result.outcome.deniedChecks };
 writeFileSync(join(outDir, "result.json"), JSON.stringify(result, null, 2));
 const rubric = readFileSync(join(LAB, "tasks", args.task, "rubric.md"), "utf8");
 writeFileSync(
@@ -434,4 +460,12 @@ writeFileSync(
   `${rubric}\nReplace each [ ] with a score [0], [1] or [2]. Read diff.patch and the final message in result.json.\n\nReviewer:\nNotes:\n`,
 );
 if (!args.keep) rmSync(ws, { recursive: true, force: true });
+if (proof) {
+  const failed = (l) => l.filter((t) => !t.pass).map((t) => t.name);
+  const line = { task: args.task, layout: args.layout, solution: proof, state: result.outcome.outcome, reasons: result.outcome.reasons,
+    checksAll: graded.checks.all, hardFailed: failed(graded.grader.hard), softFailed: failed(graded.grader.soft), hardCount: graded.grader.hard.length };
+  console.log(`PROOF ${JSON.stringify(line)}`);
+  rmSync(outDir, { recursive: true, force: true });
+  process.exit(0);
+}
 log(`done: outcome=${result.outcome.outcome} success=${result.success} hard=${graded.hardPass} checks=${graded.checks.all} cost=$${result.costUsd.toFixed(2)} turns=${result.turns}`);
