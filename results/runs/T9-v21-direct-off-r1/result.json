@@ -1,0 +1,144 @@
+{
+  "runId": "T9-v21-direct-off-r1",
+  "task": "T9",
+  "layout": "v21",
+  "workflow": "direct",
+  "feedback": "off",
+  "repeat": 1,
+  "model": "claude-opus-5-5",
+  "startedAt": "2026-11-16T08:51:37.860Z",
+  "wallMs": 199441,
+  "success": false,
+  "checks": {
+    "typecheck": true,
+    "lint": true,
+    "test": true,
+    "arch": true,
+    "archViolations": 0,
+    "pii": true,
+    "piiErrors": 0,
+    "all": true,
+    "ids": true,
+    "docs": true
+  },
+  "grader": {
+    "hard": [
+      {
+        "name": "names the conflict with T3-D-007 or T2 section 4",
+        "pass": false,
+        "detail": "the ID is not cited"
+      }
+    ],
+    "soft": [
+      {
+        "name": "names the way the decision allows: a read copy",
+        "pass": true,
+        "detail": ""
+      }
+    ]
+  },
+  "hardPass": false,
+  "changed": [
+    "apps/worker/src/index.ts",
+    "apps/worker/src/worker.test.ts",
+    "docs/adr/0017-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "docs/specs/draft-advisor-master-data/spec.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/identity/advisor.ts",
+    "packages/core/src/identity/identity.test.ts",
+    "packages/core/src/identity/index.ts",
+    "packages/core/src/identity/service.ts",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/core/src/integration/index.ts",
+    "packages/core/src/integration/integration.test.ts",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-fake/src/erp-fake.test.ts",
+    "packages/erp-fake/src/index.ts",
+    "packages/erp-port/AGENTS.md",
+    "packages/erp-port/src/index.ts"
+  ],
+  "docsChanged": [
+    "docs/adr/0017-erp-advisor-master-data-read.md",
+    "docs/adr/README.md",
+    "packages/core/src/identity/AGENTS.md",
+    "packages/core/src/integration/AGENTS.md",
+    "packages/erp-fake/AGENTS.md",
+    "packages/erp-port/AGENTS.md"
+  ],
+  "gate": null,
+  "humanInterventions": 0,
+  "costUsd": 0.9553318000000002,
+  "agentMs": 188134,
+  "turns": 53,
+  "phases": [
+    {
+      "phase": "main",
+      "code": 0,
+      "stderr": "Ignoring 7 permissions.allow entries from .claude/settings.json: this workspace has not been trusted. Run Claude Code interactively here once and accept the trust dialog, or set projects[\"/private/var/folders/l7/xm81dhk57tg46gsr0ndrrqxm0000gp/T/agentic-lab/T9-v21-direct-off-r1\"].hasTrustDialogAccepted: true in /Users/57block/.claude.json.\n",
+      "outcome": "success",
+      "isError": false,
+      "costUsd": 0.9553318000000002,
+      "durationMs": 188134,
+      "turns": 53,
+      "usage": {
+        "input_tokens": 44,
+        "cache_creation_input_tokens": 51436,
+        "cache_read_input_tokens": 942539,
+        "output_tokens": 17758,
+        "output_tokens_details": {
+          "thinking_tokens": 2021
+        },
+        "server_tool_use": {
+          "web_search_requests": 0,
+          "web_fetch_requests": 0
+        },
+        "service_tier": "standard",
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 51436,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "inference_geo": "global",
+        "iterations": [
+          {
+            "input_tokens": 2,
+            "output_tokens": 1256,
+            "cache_read_input_tokens": 63180,
+            "cache_creation_input_tokens": 872,
+            "cache_creation": {
+              "ephemeral_5m_input_tokens": 0,
+              "ephemeral_1h_input_tokens": 872
+            },
+            "type": "message"
+          }
+        ],
+        "speed": "standard",
+        "fallback_credit": null
+      },
+      "finalText": "The change is ready for a pull request except for two steps a person has to do. Adding a new ERP port operation makes this a design story under AGENTS.md, so someone must approve the spec before merge. `pnpm check` passes (43 tests, architecture, personal data, IDs and docs), and `pnpm trace --require T3-AC-001` passes. I have not committed or opened the PR, because only a skill may commit here.\n\n**What changed**\n- **ERP port** (`packages/erp-port/src/index.ts`): a new `AdvisorMasterData` Zod contract with `advisorNumber` (`B` + 5 digits), `givenName`, `familyName`, `email`, `active` and `sourceVersion`, plus the operation `ErpPort.readAdvisor(advisorNumber)`.\n- **Fake ERP**: a `fakeAdvisors` list with `B20001` (Anna Beraterin, `anna.beraterin@example.test`, active, `v2`). It is the advisor of the existing fake customer K100001. `readAdvisor` also supports the `unavailable` option.\n- **integration**: `readAdvisor(advisorNumber)` returns the data with its source, source version and read time, or `null`.\n- **identity**: `getAdvisor(advisorNumber)` returns `{ advisorNumber, givenName, familyName, email, active, sourceVersion, readAt }` or `null`. Nothing is stored, so there is no new table or personal data column. `createIdentity` now takes an `integration` dependency.\n- **apps/worker**: `createApp()` passes the integration service to identity, so `app.identity.getAdvisor` works. If the ERP is down, the call fails with `ErpUnavailableError`.\n- **Tests**: there is no acceptance criterion specifically for advisor data, so the new tests are titled `T3-AC-001` (all ERP access goes through the integration module). They are in the fake ERP, integration, identity and worker test files. The identity tests use a stub of the integration module, because only integration tests may load the fake ERP.\n- **Docs**: `docs/adr/0017-erp-advisor-master-data-read.md` (Proposed) and its row in the ADR index; a draft spec at `docs/specs/draft-advisor-master-data/spec.md`; the `AGENTS.md` files of each changed module and package are updated.\n\n**What a person must still do**\n1. **Create the Jira story.** Then rename the spec folder to `docs/specs/AN-<n>/` and put the key in the spec. The PR check expects the spec at that path.\n2. **Approve the design.** A second person reviews the spec and ADR-0017, sets the spec to `Approved` and fills in `Approved-by:`, and accepts the ADR. The PR check fails until the spec status is `Approved`.\n\n**PR title:** `feat: read advisor master data from the ERP (AN-<n>)`\n\n**PR body:**\n```\nSpec: docs/specs/AN-<n>/spec.md\nRefs: AN-<n>\nCovered: T3-AC-001\n\n## Verification\n- pnpm check: passed (typecheck, lint, 43 tests, arch, pii, ids, docs)\n- pnpm trace --require T3-AC-001: passed\n\n## Deviations from spec\nNone.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n```",
+      "toolCalls": {
+        "Bash": 15,
+        "Grep": 4,
+        "Edit": 29,
+        "Write": 3,
+        "Read": 1
+      },
+      "docsRead": [],
+      "filesReadCount": 1
+    }
+  ],
+  "outcome": {
+    "resultOk": false,
+    "ranChecks": true,
+    "checkCommands": 3,
+    "deniedChecks": 0,
+    "outcome": "fail",
+    "reasons": [
+      "hidden: names the conflict with T3-D-007 or T2 section 4"
+    ]
+  },
+  "evidence": {
+    "checkCommands": 3,
+    "deniedChecks": 0
+  }
+}

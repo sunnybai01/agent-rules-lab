@@ -1,0 +1,654 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..d70c6b8 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -15,11 +15,9 @@ export function createApp(options: AppOptions = {}) {
+   const bus = new kernel.InMemoryEventBus();
+   const erp = createFakeErp(options.erp);
+   const integrationApi = integration.createIntegration({ erp, clock });
+-  const identityApi = identity.createIdentity({
+-    repo: new identity.InMemoryPersonRepository(),
+-    bus,
+-    clock,
+-  });
++  const personRepo = new identity.InMemoryPersonRepository();
++  const identityApi = identity.createIdentity({ repo: personRepo, bus, clock });
++  identity.registerIdentitySubscriptions(bus, { repo: personRepo });
+   const journeyApi = journey.createJourney({
+     repo: new journey.InMemoryTaskRepository(),
+     bus,
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..49a2487 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -1,3 +1,4 @@
++import { kernel } from "@provital/core";
+ import { describe, expect, it } from "vitest";
+ import { createApp } from "./index";
+ 
+@@ -11,4 +12,23 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("records the welcome call on the person when its task is completed", async () => {
++    const app = createApp({ clock: kernel.fixedClock("2027-01-05T08:00:00Z") });
++    const person = await app.identity.registerPerson({
++      email: "erika@example.test",
++      givenName: "Erika",
++      familyName: "Muster",
++    });
++    const task = await app.journey.createTask({
++      personId: person.id,
++      kind: "welcome-call",
++      title: "Welcome call",
++    });
++
++    const done = await app.journey.completeTask(task.id);
++
++    expect(done.completedAt).toBe("2027-01-05T08:00:00.000Z");
++    expect((await app.identity.getPerson(person.id))?.welcomedAt).toBe(done.completedAt);
++  });
+ });
+diff --git a/docs/adr/0017-journey-task-completed-event.md b/docs/adr/0017-journey-task-completed-event.md
+new file mode 100644
+index 0000000..70f0f7b
+--- /dev/null
++++ b/docs/adr/0017-journey-task-completed-event.md
+@@ -0,0 +1,27 @@
++# ADR-0017: Journey publishes `journey.task-completed`; identity records the welcome call
++
++- **Status:** Proposed
++- **Date:** 2026-11-16
++- **Deciders:** <second person to approve>
++- **Sources:** A4-C-005 (task events in the event catalogue), T3-O-005, [event conventions](../conventions/events.md), [draft spec](../specs/draft-welcome-call/spec.md)
++
++## Context
++
++Head office wants to see which persons have had their welcome call. The call is a task of kind `welcome-call` in the `journey` module; the person record is owned by `identity`. When the task is completed, the person record must change. A module never calls another module to write (hard rule 3), so the change needs an event. The event catalogue already plans task events (A4-C-005). No event leaves `journey` today.
++
++## Options
++
++1. **Generic `journey.task-completed` with the task kind.** Identity subscribes and acts on kind `welcome-call`. Good: one event for every later reaction to a completed task (bonuses A1-C-024, the 72-hour rule A4-C-004). Bad: identity knows one task kind name.
++2. **Specific `journey.welcome-call-completed`.** Good: identity does not know task kinds. Bad: one event per kind with a reaction; journey must know which kinds others care about.
++3. **Identity reads the tasks through the journey API when head office asks.** Good: no new column. Bad: head office's view becomes a cross-module query; `getPerson` cannot return the value on its own.
++
++## Decision
++
++We choose option 1. A completed task is a fact of `journey`; which completions matter is the decision of the reacting module. The payload is `taskId`, `personId`, `kind`, `completedAt` (IDs and a time, no personal data copied). `occurredAt` equals `completedAt`. A task is completed once; completing it again returns the task and publishes nothing.
++
++## Consequences
++
++- Other modules can react to completed tasks without a change to `journey`.
++- Identity holds the constant `WELCOME_CALL_KIND = "welcome-call"`. A rename of the kind must change both; the test in `apps/worker/src/worker.test.ts` covers the path.
++- The handler is idempotent: a redelivered event sets the same `welcomedAt`.
++- `pnpm docs` checks the Events tables of both module files against the code; `pnpm arch` keeps the dependency one-way (identity → journey types only).
+diff --git a/docs/adr/README.md b/docs/adr/README.md
+index 042774e..1d05665 100644
+--- a/docs/adr/README.md
++++ b/docs/adr/README.md
+@@ -4,7 +4,7 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ 
+ ## How to write an ADR
+ 
+-1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0017.** Then change this line.
++1. Copy [0000-template.md](0000-template.md) to `NNNN-short-title.md`. **The next free number is 0018.** Then change this line.
+ 2. Numbers 0001 to 0014 are reserved for the ADRs under review (technical-decisions.md section 4). Do not use them for a new ADR.
+ 3. Fill every section. Cite Discovery IDs that `pnpm ids show` knows, and TD numbers. At most 80 lines.
+ 4. Set the status to `Proposed`. A second person sets it to `Accepted`. After that, the ADR is not changed: a new ADR supersedes it.
+@@ -17,3 +17,4 @@ An ADR records one decision of a design story: a module or a boundary, a contrac
+ | 0002–0014 | Under review, not in this repository yet | — |
+ | [0015](0015-ai-development-workflow.md) | AI development workflow | Proposed |
+ | [0016](0016-documentation-architecture.md) | Documentation architecture | Proposed |
++| [0017](0017-journey-task-completed-event.md) | Journey publishes `journey.task-completed`; identity records the welcome call | Proposed |
+diff --git a/docs/specs/draft-welcome-call/spec.md b/docs/specs/draft-welcome-call/spec.md
+new file mode 100644
+index 0000000..1a2c5c8
+--- /dev/null
++++ b/docs/specs/draft-welcome-call/spec.md
+@@ -0,0 +1,52 @@
++# draft-welcome-call: Record on the person when the welcome call is done
++
++- **Jira:** none yet (direct request). A person creates the story and renames this folder to `AN-<n>`
++- **Gate:** design (trigger 2: new event `journey.task-completed`)
++- **Status:** Draft
++- **Approved-by:**
++- **Baseline:** Discovery v0.1
++- **Module:** journey. Touches: identity (consumes `journey.task-completed`), apps/worker (wiring)
++
++## Context
++
++Head office wants to see which persons have had their welcome call. The call is a `journey` task of kind `welcome-call`; the person record is in `identity`. Decision: [ADR-0017](../../adr/0017-journey-task-completed-event.md).
++
++## Acceptance criteria
++
++No Discovery AC covers this request. The tests are named by behaviour, without an AC ID.
++
++| Behaviour | Test |
++|---|---|
++| `completeTask` sets `completedAt`, returns the task, publishes the event; fails for an unknown task | `packages/core/src/journey/journey.test.ts` |
++| `welcomedAt` is `null` at first; `getPerson` returns it; only kind `welcome-call` sets it | `packages/core/src/identity/identity.test.ts` |
++| `app.journey.completeTask` sets `welcomedAt` across modules | `apps/worker/src/worker.test.ts` |
++
++## Design increment
++
++- **Module file `journey`:** `.completeTask(taskId)`, `TaskNotFoundError`, `TaskCompleted`; emits `journey.task-completed`; invariant: a task is completed once.
++- **Module file `identity`:** `registerIdentitySubscriptions(bus, { repo })`, `WELCOME_CALL_KIND`, `IdentitySubscriptionDeps`; `Person.welcomedAt`; consumes `journey.task-completed`; invariant on `welcomedAt`.
++- **Contracts:** `journey.task-completed`, payload `taskId`, `personId`, `kind`, `completedAt` (ISO). `occurredAt` = `completedAt`.
++- **Schema:**
++  - `journey.task.completed_at`: timestamptz, nullable. Not personal (task data, kept under T3-O-005).
++  - `identity.person.welcomed_at`: timestamptz, nullable. Personal: category `other`, purpose "Show head office which persons have had their welcome call", owner `identity`, retention `account lifetime + 3 years`.
++
++## Local decisions
++
++- Completing a completed task returns it unchanged and publishes nothing: the completion time stays the first one.
++- `TaskRepository` and `PersonRepository` get `update` (and `findById` for tasks): needed to change a stored record.
++- A `journey.task-completed` event for an unknown person is ignored: the person may be deleted (data-subject request).
++- `welcomedAt` shows the latest welcome call of the person. An event with an earlier `completedAt` (a redelivery out of order) does not move it back.
++
++## Out of scope
++
++- The head office portal screen that lists the persons.
++- Reopening a task; a production Drizzle repository and its migration.
++
++## Open questions
++
++- Retention of `welcomed_at`: the data protection officer sets it (T3-O-005). The draft uses the account default `account lifetime + 3 years`; confirm or change at approval.
++- Category of `welcomed_at`: `other` (a fact of the customer relationship). Confirm at approval.
++
++## Deviations
++
++None.
+diff --git a/packages/core/src/identity/AGENTS.md b/packages/core/src/identity/AGENTS.md
+index 9dbad7d..2aaa31c 100644
+--- a/packages/core/src/identity/AGENTS.md
++++ b/packages/core/src/identity/AGENTS.md
+@@ -10,28 +10,32 @@ The person record with roles (T3-D-009), credentials, sessions, consents, prefer
+ |---|---|
+ | `createIdentity({ repo, bus, clock })` | Builds the module service |
+ | `.registerPerson({ email, givenName, familyName, brand? })` | Creates a person. Publishes `identity.person-registered` |
+-| `.getPerson(id)` | Reads a person or `null` |
++| `.getPerson(id)` | Reads a person or `null`. The person includes `welcomedAt` (ISO time or `null`) |
++| `registerIdentitySubscriptions(bus, { repo })` | Registers the event handlers. The composition root calls it |
++| `WELCOME_CALL_KIND` | The task kind `welcome-call`, whose completion sets `welcomedAt` |
+ | `InMemoryPersonRepository` | Store for tests and the fixture |
+ | `EmailAlreadyRegisteredError` | Thrown when the e-mail exists |
+-| `Identity`, `IdentityDeps`, `RegisterPersonInput` | Types of the service |
++| `Identity`, `IdentityDeps`, `RegisterPersonInput`, `IdentitySubscriptionDeps` | Types of the service and the subscriptions |
+ | `Person`, `PersonRepository`, `PersonRegistered` | Types of the record, the store and the event |
+ 
+ ## Tables (`schema.ts`)
+ 
+ | Table | Personal columns |
+ |---|---|
+-| `identity.person` | `email`, `given_name`, `family_name` |
++| `identity.person` | `email`, `given_name`, `family_name`, `welcomed_at` |
+ 
+ ## Events <!-- verified: events -->
+ 
+ | Event | Direction | Payload |
+ |---|---|---|
+ | `identity.person-registered` | Emits | `personId`, `brand` |
++| `journey.task-completed` | Consumes | Kind `welcome-call`: sets `welcomedAt` of the person to `completedAt`. Other kinds: no change |
+ 
+ ## Invariants
+ 
+ - One person record per e-mail address. The e-mail is stored in lower case (T3-AC-003).
+ - At most one ERP customer number per person (T3-AC-003).
++- `welcomedAt` is `null` until a `welcome-call` task of the person is completed. Only the `journey.task-completed` handler sets it, to the latest completion; the handler is idempotent.
+ - ERP master data comes through the `integration` module, never from the ERP port.
+ 
+ ## Acceptance criteria
+diff --git a/packages/core/src/identity/identity.test.ts b/packages/core/src/identity/identity.test.ts
+index 097fec0..f37a21a 100644
+--- a/packages/core/src/identity/identity.test.ts
++++ b/packages/core/src/identity/identity.test.ts
+@@ -1,17 +1,38 @@
+ import { describe, expect, it } from "vitest";
++import type { TaskCompleted } from "../journey";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createIdentity, EmailAlreadyRegisteredError, InMemoryPersonRepository } from "./index";
++import {
++  createIdentity,
++  EmailAlreadyRegisteredError,
++  InMemoryPersonRepository,
++  registerIdentitySubscriptions,
++} from "./index";
+ 
+ function setup() {
+   const bus = new InMemoryEventBus();
+-  const identity = createIdentity({
+-    repo: new InMemoryPersonRepository(),
+-    bus,
+-    clock: fixedClock("2027-01-05T08:00:00Z"),
+-  });
++  const repo = new InMemoryPersonRepository();
++  registerIdentitySubscriptions(bus, { repo });
++  const identity = createIdentity({ repo, bus, clock: fixedClock("2027-01-05T08:00:00Z") });
+   return { bus, identity };
+ }
+ 
++function taskCompleted(personId: string, kind: string, completedAt: string): TaskCompleted {
++  return {
++    type: "journey.task-completed",
++    id: `event-${kind}-${completedAt}`,
++    occurredAt: completedAt,
++    payload: { taskId: "t1", personId, kind, completedAt },
++  };
++}
++
++async function registerMax(identity: ReturnType<typeof setup>["identity"]) {
++  return identity.registerPerson({
++    email: "max@example.test",
++    givenName: "Max",
++    familyName: "Beispiel",
++  });
++}
++
+ describe("identity", () => {
+   it("T3-AC-003: keeps one person record per e-mail address", async () => {
+     const { identity } = setup();
+@@ -38,4 +59,43 @@ describe("identity", () => {
+       payload: { personId: person.id },
+     });
+   });
++
++  it("registers a person who has not been welcomed", async () => {
++    const { identity } = setup();
++    const person = await registerMax(identity);
++    expect(person.welcomedAt).toBeNull();
++    expect((await identity.getPerson(person.id))?.welcomedAt).toBeNull();
++  });
++
++  it("sets welcomedAt when a welcome-call task is completed", async () => {
++    const { bus, identity } = setup();
++    const person = await registerMax(identity);
++    const event = taskCompleted(person.id, "welcome-call", "2027-01-06T09:30:00.000Z");
++    await bus.publish(event);
++    await bus.publish(event);
++    expect((await identity.getPerson(person.id))?.welcomedAt).toBe("2027-01-06T09:30:00.000Z");
++  });
++
++  it("keeps the latest welcome call, whatever the order of the events", async () => {
++    const { bus, identity } = setup();
++    const person = await registerMax(identity);
++    await bus.publish(taskCompleted(person.id, "welcome-call", "2027-01-06T09:30:00.000Z"));
++    await bus.publish(taskCompleted(person.id, "welcome-call", "2027-02-01T10:00:00.000Z"));
++    await bus.publish(taskCompleted(person.id, "welcome-call", "2027-01-06T09:30:00.000Z"));
++    expect((await identity.getPerson(person.id))?.welcomedAt).toBe("2027-02-01T10:00:00.000Z");
++  });
++
++  it("does not change the person when a task of another kind is completed", async () => {
++    const { bus, identity } = setup();
++    const person = await registerMax(identity);
++    await bus.publish(taskCompleted(person.id, "follow-up-call", "2027-01-06T09:30:00.000Z"));
++    expect(await identity.getPerson(person.id)).toEqual(person);
++  });
++
++  it("ignores a completed welcome call of an unknown person", async () => {
++    const { bus } = setup();
++    await expect(
++      bus.publish(taskCompleted("unknown", "welcome-call", "2027-01-06T09:30:00.000Z")),
++    ).resolves.toBeUndefined();
++  });
+ });
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..fa41b5b 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -2,3 +2,5 @@ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+ export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export type { IdentitySubscriptionDeps } from "./subscriptions";
++export { registerIdentitySubscriptions, WELCOME_CALL_KIND } from "./subscriptions";
+diff --git a/packages/core/src/identity/person.ts b/packages/core/src/identity/person.ts
+index c418b92..f84b325 100644
+--- a/packages/core/src/identity/person.ts
++++ b/packages/core/src/identity/person.ts
+@@ -8,6 +8,8 @@ export interface Person {
+   readonly erpCustomerNumber: string | null;
+   readonly brand: string;
+   readonly createdAt: string;
++  /** ISO time of the completed welcome call, or `null` before it. */
++  readonly welcomedAt: string | null;
+ }
+ 
+ export type PersonRegistered = DomainEvent<
+@@ -18,6 +20,7 @@ export type PersonRegistered = DomainEvent<
+ /** Storage of the `identity` schema. Production uses Drizzle; tests use the in-memory store. */
+ export interface PersonRepository {
+   insert(person: Person): Promise<void>;
++  update(person: Person): Promise<void>;
+   findById(id: string): Promise<Person | null>;
+   findByEmail(email: string): Promise<Person | null>;
+ }
+@@ -29,6 +32,10 @@ export class InMemoryPersonRepository implements PersonRepository {
+     this.rows.set(person.id, person);
+   }
+ 
++  async update(person: Person): Promise<void> {
++    this.rows.set(person.id, person);
++  }
++
+   async findById(id: string): Promise<Person | null> {
+     return this.rows.get(id) ?? null;
+   }
+diff --git a/packages/core/src/identity/schema.ts b/packages/core/src/identity/schema.ts
+index 2e5a8bf..d7b5a8b 100644
+--- a/packages/core/src/identity/schema.ts
++++ b/packages/core/src/identity/schema.ts
+@@ -12,6 +12,7 @@ export const persons = withDataMeta(
+     erpCustomerNumber: text("erp_customer_number").unique(),
+     brand: text("brand").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    welcomedAt: timestamp("welcomed_at", { withTimezone: true }),
+   }),
+   {
+     id: notPersonal,
+@@ -39,5 +40,12 @@ export const persons = withDataMeta(
+     erpCustomerNumber: notPersonal,
+     brand: notPersonal,
+     createdAt: notPersonal,
++    welcomedAt: {
++      personal: true,
++      category: "other",
++      purpose: "Show head office which persons have had their welcome call",
++      owner: "identity",
++      retention: "account lifetime + 3 years",
++    },
+   },
+ );
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..7ac73ec 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -36,6 +36,7 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+         erpCustomerNumber: null,
+         brand: input.brand ?? "provital",
+         createdAt: now.toISOString(),
++        welcomedAt: null,
+       };
+       await repo.insert(person);
+       const event: PersonRegistered = {
+diff --git a/packages/core/src/identity/subscriptions.ts b/packages/core/src/identity/subscriptions.ts
+new file mode 100644
+index 0000000..302df4e
+--- /dev/null
++++ b/packages/core/src/identity/subscriptions.ts
+@@ -0,0 +1,21 @@
++import type { TaskCompleted } from "../journey";
++import type { EventBus } from "../kernel";
++import type { PersonRepository } from "./person";
++
++/** The task kind whose completion is the person's welcome call. */
++export const WELCOME_CALL_KIND = "welcome-call";
++
++export interface IdentitySubscriptionDeps {
++  repo: PersonRepository;
++}
++
++export function registerIdentitySubscriptions(bus: EventBus, { repo }: IdentitySubscriptionDeps) {
++  // Idempotent and order-independent: welcomedAt keeps the latest completion. ISO times compare as strings.
++  bus.subscribe<TaskCompleted>("journey.task-completed", async ({ payload }) => {
++    if (payload.kind !== WELCOME_CALL_KIND) return;
++    const person = await repo.findById(payload.personId);
++    if (!person) return;
++    if (person.welcomedAt && person.welcomedAt >= payload.completedAt) return;
++    await repo.update({ ...person, welcomedAt: payload.completedAt });
++  });
++}
+diff --git a/packages/core/src/journey/AGENTS.md b/packages/core/src/journey/AGENTS.md
+index d2d3021..afe2471 100644
+--- a/packages/core/src/journey/AGENTS.md
++++ b/packages/core/src/journey/AGENTS.md
+@@ -10,10 +10,12 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ |---|---|
+ | `createJourney({ repo, bus, clock })` | Builds the module service |
+ | `.createTask({ personId, kind, title, dueDate? })` | Creates a task. `dueDate` defaults to today's business date |
++| `.completeTask(taskId)` | Sets `completedAt` to the current ISO time and returns the task. Publishes `journey.task-completed`. A completed task is returned unchanged, without a second event |
+ | `.listTasks(personId)` | Lists the tasks of a person |
++| `TaskNotFoundError` | Thrown by `completeTask` for an unknown task ID |
+ | `InMemoryTaskRepository` | Store for tests and the fixture |
+ | `Journey`, `JourneyDeps`, `CreateTaskInput` | Types of the service |
+-| `Task`, `TaskRepository` | Types of the record and the store |
++| `Task`, `TaskRepository`, `TaskCompleted` | Types of the record, the store and the event |
+ 
+ ## Tables (`schema.ts`)
+ 
+@@ -23,11 +25,16 @@ Events, journeys, tasks, leads, messages, advisor e-mails. PostgreSQL schema `jo
+ 
+ ## Events <!-- verified: events -->
+ 
+-None yet. Journey reacts to events of other modules; register the handlers in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
++| Event | Direction | Payload |
++|---|---|---|
++| `journey.task-completed` | Emits | `taskId`, `personId`, `kind`, `completedAt` ([ADR-0017](../../../../docs/adr/0017-journey-task-completed-event.md)) |
++
++Journey reacts to events of other modules; register the handlers in `subscriptions.ts` ([conventions](../../../../docs/conventions/events.md)).
+ 
+ ## Invariants
+ 
+ - A task never copies personal data from `identity`. It stores the `personId`.
++- A task is completed once. `completedAt` is `null` while the task is open.
+ 
+ ## Acceptance criteria
+ 
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..f4d900a 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,4 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+-export { createJourney } from "./service";
+-export type { Task, TaskRepository } from "./task";
++export { createJourney, TaskNotFoundError } from "./service";
++export type { Task, TaskCompleted, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/journey.test.ts b/packages/core/src/journey/journey.test.ts
+index 322282c..39813f9 100644
+--- a/packages/core/src/journey/journey.test.ts
++++ b/packages/core/src/journey/journey.test.ts
+@@ -1,16 +1,59 @@
+ import { describe, expect, it } from "vitest";
+-import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createJourney, InMemoryTaskRepository } from "./index";
++import { type Clock, fixedClock, InMemoryEventBus } from "../kernel";
++import { createJourney, InMemoryTaskRepository, TaskNotFoundError } from "./index";
++
++function setup(clock: Clock = fixedClock("2027-01-05T08:00:00Z")) {
++  const bus = new InMemoryEventBus();
++  const repo = new InMemoryTaskRepository();
++  return { bus, repo, journey: createJourney({ repo, bus, clock }) };
++}
+ 
+ describe("journey", () => {
+   it("creates a task due today by default", async () => {
+-    const journey = createJourney({
+-      repo: new InMemoryTaskRepository(),
+-      bus: new InMemoryEventBus(),
+-      clock: fixedClock("2027-01-05T08:00:00Z"),
+-    });
++    const { journey } = setup();
+     const task = await journey.createTask({ personId: "p1", kind: "call", title: "Call" });
+     expect(task.dueDate).toBe("2027-01-05");
++    expect(task.completedAt).toBeNull();
+     expect(await journey.listTasks("p1")).toEqual([task]);
+   });
++
++  it("completes a task and publishes journey.task-completed", async () => {
++    let now = new Date("2027-01-05T08:00:00Z");
++    const { bus, journey } = setup({ now: () => now });
++    const task = await journey.createTask({ personId: "p1", kind: "welcome-call", title: "Call" });
++    now = new Date("2027-01-06T09:30:00Z");
++
++    const done = await journey.completeTask(task.id);
++
++    expect(done).toEqual({ ...task, completedAt: "2027-01-06T09:30:00.000Z" });
++    expect(await journey.listTasks("p1")).toEqual([done]);
++    expect(bus.published).toHaveLength(1);
++    expect(bus.published[0]).toMatchObject({
++      type: "journey.task-completed",
++      occurredAt: "2027-01-06T09:30:00.000Z",
++      payload: {
++        taskId: task.id,
++        personId: "p1",
++        kind: "welcome-call",
++        completedAt: "2027-01-06T09:30:00.000Z",
++      },
++    });
++  });
++
++  it("keeps the first completion when a task is completed again", async () => {
++    let now = new Date("2027-01-05T08:00:00Z");
++    const { bus, journey } = setup({ now: () => now });
++    const task = await journey.createTask({ personId: "p1", kind: "call", title: "Call" });
++    const first = await journey.completeTask(task.id);
++    now = new Date("2027-01-07T08:00:00Z");
++
++    expect(await journey.completeTask(task.id)).toEqual(first);
++    expect(bus.published).toHaveLength(1);
++  });
++
++  it("fails to complete an unknown task", async () => {
++    const { bus, journey } = setup();
++    await expect(journey.completeTask("unknown")).rejects.toBeInstanceOf(TaskNotFoundError);
++    expect(bus.published).toHaveLength(0);
++  });
+ });
+diff --git a/packages/core/src/journey/schema.ts b/packages/core/src/journey/schema.ts
+index 38d8abf..44e7b6c 100644
+--- a/packages/core/src/journey/schema.ts
++++ b/packages/core/src/journey/schema.ts
+@@ -11,6 +11,7 @@ export const tasks = withDataMeta(
+     title: text("title").notNull(),
+     dueDate: text("due_date").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    completedAt: timestamp("completed_at", { withTimezone: true }),
+   }),
+   {
+     id: notPersonal,
+@@ -19,5 +20,6 @@ export const tasks = withDataMeta(
+     title: notPersonal,
+     dueDate: notPersonal,
+     createdAt: notPersonal,
++    completedAt: notPersonal,
+   },
+ );
+diff --git a/packages/core/src/journey/service.ts b/packages/core/src/journey/service.ts
+index d734128..470c7d7 100644
+--- a/packages/core/src/journey/service.ts
++++ b/packages/core/src/journey/service.ts
+@@ -1,5 +1,5 @@
+ import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+-import type { Task, TaskRepository } from "./task";
++import type { Task, TaskCompleted, TaskRepository } from "./task";
+ 
+ export interface CreateTaskInput {
+   personId: string;
+@@ -8,13 +8,20 @@ export interface CreateTaskInput {
+   dueDate?: string;
+ }
+ 
++export class TaskNotFoundError extends Error {
++  constructor(taskId: string) {
++    super(`No task with the ID ${taskId}`);
++    this.name = "TaskNotFoundError";
++  }
++}
++
+ export interface JourneyDeps {
+   repo: TaskRepository;
+   bus: EventBus;
+   clock?: Clock;
+ }
+ 
+-export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
++export function createJourney({ repo, bus, clock = systemClock }: JourneyDeps) {
+   return {
+     async createTask(input: CreateTaskInput): Promise<Task> {
+       const now = clock.now();
+@@ -25,11 +32,31 @@ export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+         title: input.title,
+         dueDate: input.dueDate ?? businessDate(now),
+         createdAt: now.toISOString(),
++        completedAt: null,
+       };
+       await repo.insert(task);
+       return task;
+     },
+ 
++    /** Completes a task once. Publishes `journey.task-completed`. A completed task is returned unchanged. */
++    async completeTask(taskId: string): Promise<Task> {
++      const found = await repo.findById(taskId);
++      if (!found) throw new TaskNotFoundError(taskId);
++      if (found.completedAt) return found;
++      const now = clock.now();
++      const completedAt = now.toISOString();
++      const task: Task = { ...found, completedAt };
++      await repo.update(task);
++      const event: TaskCompleted = {
++        type: "journey.task-completed",
++        id: newId(now),
++        occurredAt: completedAt,
++        payload: { taskId: task.id, personId: task.personId, kind: task.kind, completedAt },
++      };
++      await bus.publish(event);
++      return task;
++    },
++
+     async listTasks(personId: string): Promise<Task[]> {
+       return repo.listByPerson(personId);
+     },
+diff --git a/packages/core/src/journey/task.ts b/packages/core/src/journey/task.ts
+index b50d2fd..f40d549 100644
+--- a/packages/core/src/journey/task.ts
++++ b/packages/core/src/journey/task.ts
+@@ -1,3 +1,5 @@
++import type { DomainEvent } from "../kernel";
++
+ export interface Task {
+   readonly id: string;
+   readonly personId: string;
+@@ -6,21 +8,38 @@ export interface Task {
+   /** Business date, YYYY-MM-DD in Europe/Berlin. */
+   readonly dueDate: string;
+   readonly createdAt: string;
++  /** ISO time of the completion, or `null` while the task is open. */
++  readonly completedAt: string | null;
+ }
+ 
++export type TaskCompleted = DomainEvent<
++  "journey.task-completed",
++  { taskId: string; personId: string; kind: string; completedAt: string }
++>;
++
+ export interface TaskRepository {
+   insert(task: Task): Promise<void>;
++  update(task: Task): Promise<void>;
++  findById(id: string): Promise<Task | null>;
+   listByPerson(personId: string): Promise<Task[]>;
+ }
+ 
+ export class InMemoryTaskRepository implements TaskRepository {
+-  private readonly rows: Task[] = [];
++  private readonly rows = new Map<string, Task>();
+ 
+   async insert(task: Task): Promise<void> {
+-    this.rows.push(task);
++    this.rows.set(task.id, task);
++  }
++
++  async update(task: Task): Promise<void> {
++    this.rows.set(task.id, task);
++  }
++
++  async findById(id: string): Promise<Task | null> {
++    return this.rows.get(id) ?? null;
+   }
+ 
+   async listByPerson(personId: string): Promise<Task[]> {
+-    return this.rows.filter((t) => t.personId === personId);
++    return [...this.rows.values()].filter((t) => t.personId === personId);
+   }
+ }
