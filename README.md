@@ -39,6 +39,23 @@ Each run:
 1. Builds a workspace in `$TMPDIR/agentic-lab/<run-id>` (outside the lab, so no lab file is found by CLAUDE.md discovery): fixture + shared docs + overlays, `pnpm install --offline`, git commit and tag `baseline`.
 2. Runs `claude -p` with `--setting-sources project` and an empty MCP config, so user hooks, plugins and MCP servers do not load. Permissions: `scoped` (default: edits plus an allowlist of shell commands, see `SCOPED_TOOLS` in `run.mjs`) or `--permissions bypass` (only in a sandbox). Each task has a budget cap (`budgetUsd`).
 3. Grades: `pnpm check` parts, traceability, hidden grader (hard and soft). Saves `result.json`, `env.json`, `check.log`, `diff.patch`, transcripts and an empty `review.md`.
+4. Sets the run's state with [harness/outcome.mjs](harness/outcome.mjs). A run that never reaches the model writes `invalid.json` instead of `result.json`: it is kept as *not evaluated* and run again by the next batch.
+
+## Result states
+
+After the [Agent Evaluation Protocol](https://agent-eval.ai/#protocol), a failure of the agent, an error of the grader and a run that could not be judged are kept apart. `report.mjs` derives the state of every run from its files, so old runs are classified like new ones without running them again.
+
+| State | Meaning | Counted as |
+|---|---|---|
+| pass | `pnpm check`, hidden hard tests and AC trace pass, **and** the agent ran a check or test itself (a denied command does not count) | success |
+| fail | anything else in which the agent changed code; a right result without that evidence is a fail | failure |
+| stopped | only `docs/` changed (spec, plan, ADR): the agent handed back to a person | neither; shown apart |
+| evaluator error | the hidden grader did not load or run, or reported no hard test | neither; never against the variant |
+| not evaluated | the run never reached the model (`invalid.json`) | neither |
+
+A person can overrule one run with `results/runs/<run-id>/outcome.json`: `{"outcome": "stopped", "reason": "...", "by": "<name>"}`.
+
+`summary.md` reports success as pass / (pass + fail) with a 95% Wilson interval, the old definition as *Result only*, cost per successful task (all spend of the group, failed and stopped runs included, divided by the passes; undefined with no pass), and a grade per experiment: **firm** only with holdout tasks (`"holdout": true` in `experiments.json`) and intervals that do not overlap, otherwise **directional**. The findings files ([E1](results/e1-findings.md), [AGB](results/agb-findings.md)) were written with the old definition of success.
 
 The model is pinned in `harness/experiments.json` (`defaults.model`); `--model` overrides it, and `env.json` records what ran. A run with a `result.json` is skipped; use `--force` to run it again. `--gate manual` stops the E2 spec workflow at the gate so that a person can edit and approve the spec.
 
