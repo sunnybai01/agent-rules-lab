@@ -2,6 +2,14 @@
 
 Experiments that choose the documentation architecture and the agent workflow for [provital-platform](../provital-platform). The plan, the questions and the metrics are in [PLAN.md](PLAN.md). A plain-language walkthrough of how the comparison works, in Chinese, is in [HOW-IT-WORKS.zh.md](HOW-IT-WORKS.zh.md).
 
+## Scope and status
+
+The lab chooses the agent rules for work on **one story** in an existing repository. A task is a story; the tasks are a sample of the real work, not the target. It does not evaluate a system that runs a whole project from a PRD to delivery.
+
+- Status, weak points of the task set and the next phase: [PLAN.md, sections 9 and 10](PLAN.md).
+- **AGB is no longer in this repository** (16 November 2026): the layout, the workflow, the design and the runs were removed to keep the lab on the story level. The reasons, what the runs showed, and how a system-level evaluation would be set up later are in [PLAN.md, section 11](PLAN.md). The removed files are in the git history (last commit with them: `b061276`).
+- Every result so far is directional, not firm: see [Result states](#result-states).
+
 ## Layout
 
 | Path | Contents |
