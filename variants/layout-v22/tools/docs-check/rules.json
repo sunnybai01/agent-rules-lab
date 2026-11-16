@@ -1,0 +1,25 @@
+{
+  "lineLimits": [],
+  "living": [
+    "AGENTS.md",
+    "docs/README.md",
+    "docs/jira.md",
+    "docs/conventions/*.md",
+    "docs/engineering/*.md",
+    "packages/**/AGENTS.md",
+    "apps/**/AGENTS.md",
+    "docs/agent/*.md"
+  ],
+  "links": [
+    "AGENTS.md",
+    "docs/README.md",
+    "docs/jira.md",
+    "docs/conventions/*.md",
+    "docs/engineering/*.md",
+    "docs/adr/*.md",
+    "packages/**/AGENTS.md",
+    "apps/**/AGENTS.md",
+    "docs/agent/*.md"
+  ],
+  "moduleSections": ["Owns", "Invariants"]
+}
