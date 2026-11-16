@@ -1,0 +1,410 @@
+diff --git a/apps/worker/src/worker.test.ts b/apps/worker/src/worker.test.ts
+index 8e05ce2..7fcc385 100644
+--- a/apps/worker/src/worker.test.ts
++++ b/apps/worker/src/worker.test.ts
+@@ -11,4 +11,33 @@ describe("worker composition", () => {
+     });
+     expect(await app.identity.getPerson(person.id)).toEqual(person);
+   });
++
++  it("records the welcome call on the person when the task is completed", async () => {
++    let now = new Date("2027-01-05T08:00:00Z");
++    const app = createApp({ clock: { now: () => now } });
++    const person = await app.identity.registerPerson({
++      email: "a@example.test",
++      givenName: "A",
++      familyName: "B",
++    });
++    const other = await app.journey.createTask({
++      personId: person.id,
++      kind: "call",
++      title: "Follow-up call",
++    });
++    const welcome = await app.journey.createTask({
++      personId: person.id,
++      kind: "welcome-call",
++      title: "Welcome call",
++    });
++
++    now = new Date("2027-01-06T09:00:00Z");
++    await app.journey.completeTask(other.id);
++    expect((await app.identity.getPerson(person.id))?.welcomedAt).toBeNull();
++
++    now = new Date("2027-01-06T09:30:00Z");
++    const completed = await app.journey.completeTask(welcome.id);
++    expect(completed.completedAt).toBe("2027-01-06T09:30:00.000Z");
++    expect((await app.identity.getPerson(person.id))?.welcomedAt).toBe(completed.completedAt);
++  });
+ });
+diff --git a/packages/core/src/identity/identity.test.ts b/packages/core/src/identity/identity.test.ts
+index 097fec0..89c6f30 100644
+--- a/packages/core/src/identity/identity.test.ts
++++ b/packages/core/src/identity/identity.test.ts
+@@ -1,4 +1,5 @@
+ import { describe, expect, it } from "vitest";
++import type { TaskCompleted } from "../journey";
+ import { fixedClock, InMemoryEventBus } from "../kernel";
+ import { createIdentity, EmailAlreadyRegisteredError, InMemoryPersonRepository } from "./index";
+ 
+@@ -38,4 +39,46 @@ describe("identity", () => {
+       payload: { personId: person.id },
+     });
+   });
++
++  it("registers a person who has not been welcomed", async () => {
++    const { identity } = setup();
++    const person = await identity.registerPerson({
++      email: "max@example.test",
++      givenName: "Max",
++      familyName: "Beispiel",
++    });
++    expect(person.welcomedAt).toBeNull();
++    expect((await identity.getPerson(person.id))?.welcomedAt).toBeNull();
++  });
++
++  it("sets welcomedAt when a welcome-call task is completed", async () => {
++    const { bus, identity } = setup();
++    const person = await identity.registerPerson({
++      email: "max@example.test",
++      givenName: "Max",
++      familyName: "Beispiel",
++    });
++    await bus.publish(taskCompleted(person.id, "welcome-call", "2027-01-06T09:30:00.000Z"));
++    expect((await identity.getPerson(person.id))?.welcomedAt).toBe("2027-01-06T09:30:00.000Z");
++  });
++
++  it("ignores a completed task of another kind", async () => {
++    const { bus, identity } = setup();
++    const person = await identity.registerPerson({
++      email: "max@example.test",
++      givenName: "Max",
++      familyName: "Beispiel",
++    });
++    await bus.publish(taskCompleted(person.id, "call", "2027-01-06T09:30:00.000Z"));
++    expect(await identity.getPerson(person.id)).toEqual(person);
++  });
+ });
++
++function taskCompleted(personId: string, kind: string, completedAt: string): TaskCompleted {
++  return {
++    type: "journey.task-completed",
++    id: "e1",
++    occurredAt: completedAt,
++    payload: { taskId: "t1", personId, kind, completedAt },
++  };
++}
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..c418741 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,4 @@
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+-export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export { createIdentity, EmailAlreadyRegisteredError, WELCOME_CALL_TASK_KIND } from "./service";
+diff --git a/packages/core/src/identity/person.ts b/packages/core/src/identity/person.ts
+index c418b92..570aca9 100644
+--- a/packages/core/src/identity/person.ts
++++ b/packages/core/src/identity/person.ts
+@@ -8,6 +8,8 @@ export interface Person {
+   readonly erpCustomerNumber: string | null;
+   readonly brand: string;
+   readonly createdAt: string;
++  /** When the welcome call took place; null until then. */
++  readonly welcomedAt: string | null;
+ }
+ 
+ export type PersonRegistered = DomainEvent<
+@@ -18,6 +20,7 @@ export type PersonRegistered = DomainEvent<
+ /** Storage of the `identity` schema. Production uses Drizzle; tests use the in-memory store. */
+ export interface PersonRepository {
+   insert(person: Person): Promise<void>;
++  update(person: Person): Promise<void>;
+   findById(id: string): Promise<Person | null>;
+   findByEmail(email: string): Promise<Person | null>;
+ }
+@@ -29,6 +32,10 @@ export class InMemoryPersonRepository implements PersonRepository {
+     this.rows.set(person.id, person);
+   }
+ 
++  async update(person: Person): Promise<void> {
++    if (this.rows.has(person.id)) this.rows.set(person.id, person);
++  }
++
+   async findById(id: string): Promise<Person | null> {
+     return this.rows.get(id) ?? null;
+   }
+diff --git a/packages/core/src/identity/schema.ts b/packages/core/src/identity/schema.ts
+index 2e5a8bf..d7b5a8b 100644
+--- a/packages/core/src/identity/schema.ts
++++ b/packages/core/src/identity/schema.ts
+@@ -12,6 +12,7 @@ export const persons = withDataMeta(
+     erpCustomerNumber: text("erp_customer_number").unique(),
+     brand: text("brand").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    welcomedAt: timestamp("welcomed_at", { withTimezone: true }),
+   }),
+   {
+     id: notPersonal,
+@@ -39,5 +40,12 @@ export const persons = withDataMeta(
+     erpCustomerNumber: notPersonal,
+     brand: notPersonal,
+     createdAt: notPersonal,
++    welcomedAt: {
++      personal: true,
++      category: "other",
++      purpose: "Show head office which persons have had their welcome call",
++      owner: "identity",
++      retention: "account lifetime + 3 years",
++    },
+   },
+ );
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..0b21cbe 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,6 +1,10 @@
++import type { TaskCompleted } from "../journey";
+ import { type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Person, PersonRegistered, PersonRepository } from "./person";
+ 
++/** The journey task kind that records the welcome call. */
++export const WELCOME_CALL_TASK_KIND = "welcome-call";
++
+ export interface RegisterPersonInput {
+   email: string;
+   givenName: string;
+@@ -22,6 +26,14 @@ export interface IdentityDeps {
+ }
+ 
+ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps) {
++  // Architecture rule 4: identity reacts to journey through the event, journey does not write here.
++  bus.subscribe<TaskCompleted>("journey.task-completed", async ({ payload }) => {
++    if (payload.kind !== WELCOME_CALL_TASK_KIND) return;
++    const person = await repo.findById(payload.personId);
++    if (!person) return;
++    await repo.update({ ...person, welcomedAt: payload.completedAt });
++  });
++
+   return {
+     /** One person record per e-mail address (T3-D-009). */
+     async registerPerson(input: RegisterPersonInput): Promise<Person> {
+@@ -36,6 +48,7 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+         erpCustomerNumber: null,
+         brand: input.brand ?? "provital",
+         createdAt: now.toISOString(),
++        welcomedAt: null,
+       };
+       await repo.insert(person);
+       const event: PersonRegistered = {
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..f4d900a 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,4 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+-export { createJourney } from "./service";
+-export type { Task, TaskRepository } from "./task";
++export { createJourney, TaskNotFoundError } from "./service";
++export type { Task, TaskCompleted, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/journey.test.ts b/packages/core/src/journey/journey.test.ts
+index 322282c..d229117 100644
+--- a/packages/core/src/journey/journey.test.ts
++++ b/packages/core/src/journey/journey.test.ts
+@@ -1,16 +1,58 @@
+ import { describe, expect, it } from "vitest";
+-import { fixedClock, InMemoryEventBus } from "../kernel";
+-import { createJourney, InMemoryTaskRepository } from "./index";
++import { type Clock, fixedClock, InMemoryEventBus } from "../kernel";
++import { createJourney, InMemoryTaskRepository, TaskNotFoundError } from "./index";
++
++function setup(clock: Clock = fixedClock("2027-01-05T08:00:00Z")) {
++  const bus = new InMemoryEventBus();
++  const journey = createJourney({ repo: new InMemoryTaskRepository(), bus, clock });
++  return { bus, journey };
++}
+ 
+ describe("journey", () => {
+   it("creates a task due today by default", async () => {
+-    const journey = createJourney({
+-      repo: new InMemoryTaskRepository(),
+-      bus: new InMemoryEventBus(),
+-      clock: fixedClock("2027-01-05T08:00:00Z"),
+-    });
++    const { journey } = setup();
+     const task = await journey.createTask({ personId: "p1", kind: "call", title: "Call" });
+     expect(task.dueDate).toBe("2027-01-05");
++    expect(task.completedAt).toBeNull();
++    expect(await journey.listTasks("p1")).toEqual([task]);
++  });
++
++  it("completes a task and publishes journey.task-completed", async () => {
++    let now = new Date("2027-01-05T08:00:00Z");
++    const { bus, journey } = setup({ now: () => now });
++    const created = await journey.createTask({ personId: "p1", kind: "call", title: "Call" });
++    now = new Date("2027-01-06T09:30:00Z");
++
++    const task = await journey.completeTask(created.id);
++
++    expect(task).toEqual({ ...created, completedAt: "2027-01-06T09:30:00.000Z" });
+     expect(await journey.listTasks("p1")).toEqual([task]);
++    expect(bus.published).toHaveLength(1);
++    expect(bus.published[0]).toMatchObject({
++      type: "journey.task-completed",
++      payload: {
++        taskId: task.id,
++        personId: "p1",
++        kind: "call",
++        completedAt: "2027-01-06T09:30:00.000Z",
++      },
++    });
++  });
++
++  it("keeps the first completion when a task is completed again", async () => {
++    let now = new Date("2027-01-05T08:00:00Z");
++    const { bus, journey } = setup({ now: () => now });
++    const created = await journey.createTask({ personId: "p1", kind: "call", title: "Call" });
++    const first = await journey.completeTask(created.id);
++    now = new Date("2027-01-07T08:00:00Z");
++
++    expect(await journey.completeTask(created.id)).toEqual(first);
++    expect(bus.published).toHaveLength(1);
++  });
++
++  it("fails for an unknown task", async () => {
++    const { bus, journey } = setup();
++    await expect(journey.completeTask("unknown")).rejects.toBeInstanceOf(TaskNotFoundError);
++    expect(bus.published).toHaveLength(0);
+   });
+ });
+diff --git a/packages/core/src/journey/schema.ts b/packages/core/src/journey/schema.ts
+index 38d8abf..44e7b6c 100644
+--- a/packages/core/src/journey/schema.ts
++++ b/packages/core/src/journey/schema.ts
+@@ -11,6 +11,7 @@ export const tasks = withDataMeta(
+     title: text("title").notNull(),
+     dueDate: text("due_date").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    completedAt: timestamp("completed_at", { withTimezone: true }),
+   }),
+   {
+     id: notPersonal,
+@@ -19,5 +20,6 @@ export const tasks = withDataMeta(
+     title: notPersonal,
+     dueDate: notPersonal,
+     createdAt: notPersonal,
++    completedAt: notPersonal,
+   },
+ );
+diff --git a/packages/core/src/journey/service.ts b/packages/core/src/journey/service.ts
+index d734128..474e067 100644
+--- a/packages/core/src/journey/service.ts
++++ b/packages/core/src/journey/service.ts
+@@ -1,5 +1,5 @@
+ import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+-import type { Task, TaskRepository } from "./task";
++import type { Task, TaskCompleted, TaskRepository } from "./task";
+ 
+ export interface CreateTaskInput {
+   personId: string;
+@@ -8,13 +8,20 @@ export interface CreateTaskInput {
+   dueDate?: string;
+ }
+ 
++export class TaskNotFoundError extends Error {
++  constructor() {
++    super("The task does not exist");
++    this.name = "TaskNotFoundError";
++  }
++}
++
+ export interface JourneyDeps {
+   repo: TaskRepository;
+   bus: EventBus;
+   clock?: Clock;
+ }
+ 
+-export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
++export function createJourney({ repo, bus, clock = systemClock }: JourneyDeps) {
+   return {
+     async createTask(input: CreateTaskInput): Promise<Task> {
+       const now = clock.now();
+@@ -25,11 +32,31 @@ export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+         title: input.title,
+         dueDate: input.dueDate ?? businessDate(now),
+         createdAt: now.toISOString(),
++        completedAt: null,
+       };
+       await repo.insert(task);
+       return task;
+     },
+ 
++    /** Marks a task as done. A task that is done already stays as it is. */
++    async completeTask(taskId: string): Promise<Task> {
++      const existing = await repo.findById(taskId);
++      if (!existing) throw new TaskNotFoundError();
++      if (existing.completedAt) return existing;
++      const now = clock.now();
++      const completedAt = now.toISOString();
++      const task: Task = { ...existing, completedAt };
++      await repo.update(task);
++      const event: TaskCompleted = {
++        type: "journey.task-completed",
++        id: newId(now),
++        occurredAt: completedAt,
++        payload: { taskId: task.id, personId: task.personId, kind: task.kind, completedAt },
++      };
++      await bus.publish(event);
++      return task;
++    },
++
+     async listTasks(personId: string): Promise<Task[]> {
+       return repo.listByPerson(personId);
+     },
+diff --git a/packages/core/src/journey/task.ts b/packages/core/src/journey/task.ts
+index b50d2fd..1999af5 100644
+--- a/packages/core/src/journey/task.ts
++++ b/packages/core/src/journey/task.ts
+@@ -1,3 +1,5 @@
++import type { DomainEvent } from "../kernel";
++
+ export interface Task {
+   readonly id: string;
+   readonly personId: string;
+@@ -6,10 +8,18 @@ export interface Task {
+   /** Business date, YYYY-MM-DD in Europe/Berlin. */
+   readonly dueDate: string;
+   readonly createdAt: string;
++  readonly completedAt: string | null;
+ }
+ 
++export type TaskCompleted = DomainEvent<
++  "journey.task-completed",
++  { taskId: string; personId: string; kind: string; completedAt: string }
++>;
++
+ export interface TaskRepository {
+   insert(task: Task): Promise<void>;
++  update(task: Task): Promise<void>;
++  findById(id: string): Promise<Task | null>;
+   listByPerson(personId: string): Promise<Task[]>;
+ }
+ 
+@@ -20,6 +30,15 @@ export class InMemoryTaskRepository implements TaskRepository {
+     this.rows.push(task);
+   }
+ 
++  async update(task: Task): Promise<void> {
++    const index = this.rows.findIndex((t) => t.id === task.id);
++    if (index >= 0) this.rows[index] = task;
++  }
++
++  async findById(id: string): Promise<Task | null> {
++    return this.rows.find((t) => t.id === id) ?? null;
++  }
++
+   async listByPerson(personId: string): Promise<Task[]> {
+     return this.rows.filter((t) => t.personId === personId);
+   }

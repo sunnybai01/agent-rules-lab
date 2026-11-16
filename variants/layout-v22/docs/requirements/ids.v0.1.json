@@ -1,0 +1,3664 @@
+{
+  "version": "0.1",
+  "source": {
+    "repo": "57blocks/provital-discovery",
+    "path": "outputs/discovery",
+    "commit": "733e97e"
+  },
+  "items": [
+    {
+      "id": "A1-AC-001",
+      "type": "AC",
+      "area": "A1",
+      "title": "For the test months the platform reproduces NAV's result per advisor and commission type inside the tolerance of section 5, or the difference has a class other than engine (A1-D-004). Where NAV and the approved rule set differ, the approved rule set applies",
+      "source": "A1-commission-annex.md:130",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-002",
+      "type": "AC",
+      "area": "A1",
+      "title": "The comparison report lists each difference with a reason code and a note. A repeated run gives the same result",
+      "source": "A1-commission-annex.md:131",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-003",
+      "type": "AC",
+      "area": "A1",
+      "title": "A past period, recalculated after a change to the structure or a point value, gives the result of the structure in force at the time",
+      "source": "A1-commission-annex.md:132",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-004",
+      "type": "AC",
+      "area": "A1",
+      "title": "A settled statement cannot change. A correction appears as a new line in the next open statement with the original order and rate",
+      "source": "A1-commission-annex.md:133",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-005",
+      "type": "AC",
+      "area": "A1",
+      "title": "A second person releases a settings change. The log shows user, date, old value and new value",
+      "source": "A1-commission-annex.md:134",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-007",
+      "type": "AC",
+      "area": "A1",
+      "title": "The monthly run for twice today's statements is not slower than NAV's current run (section 5)",
+      "source": "A1-commission-annex.md:135",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-008",
+      "type": "AC",
+      "area": "A1",
+      "title": "During the parallel run, no platform result goes to the ERP for booking. After the switch, the released result reaches the ERP once per advisor and month, and the ERP returns the credit-note reference",
+      "source": "A1-commission-annex.md:136",
+      "status": "active"
+    },
+    {
+      "id": "A1-AC-009",
+      "type": "AC",
+      "area": "A1",
+      "title": "Until the switch the portal shows NAV's statement as binding, and no forecast without a label",
+      "source": "A1-commission-annex.md:137",
+      "status": "active"
+    },
+    {
+      "id": "A1-C-001",
+      "type": "C",
+      "area": "A1",
+      "title": "Monthly settlement periods with a payment cutoff (a sale counts when paid by a set day) and a statement deadline, as settings",
+      "source": "A1-commission-annex.md:65",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-002",
+      "type": "C",
+      "area": "A1",
+      "title": "Points per order line from the product point value in the ERP. Reversals that refer to the original order and period, within an adjustable window (today two years). Manual point corrections from the ERP",
+      "source": "A1-commission-annex.md:66",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-003",
+      "type": "C",
+      "area": "A1",
+      "title": "Point bases: own sales, group sales and activity turnover, including the sales of advisors recruited in the month",
+      "source": "A1-commission-annex.md:67",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-004",
+      "type": "C",
+      "area": "A1",
+      "title": "Level table with thresholds and rates, a training condition per level, level protection over a rolling window, and a block period",
+      "source": "A1-commission-annex.md:68",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-005",
+      "type": "C",
+      "area": "A1",
+      "title": "Support commission as a differential, with a minimum activity turnover, a roll-up to the sponsor, and a start-phase minimum rate whose top-up does not affect the upline",
+      "source": "A1-commission-annex.md:69",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-006",
+      "type": "C",
+      "area": "A1",
+      "title": "Group formation (breakaway) with a time-limited transition rank, once per advisor",
+      "source": "A1-commission-annex.md:70",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-007",
+      "type": "C",
+      "area": "A1",
+      "title": "Leader commission down to an adjustable depth (today level 4), with leader levels qualified by the own group and the number of first-line groups, and a minimum share of customer sales",
+      "source": "A1-commission-annex.md:71",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-008",
+      "type": "C",
+      "area": "A1",
+      "title": "Building bonus: the rates of empty deeper levels, paid on level 1; qualification per team over a rolling window (today three months) with counts and weights; automatic qualification after a career jump",
+      "source": "A1-commission-annex.md:72",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-009",
+      "type": "C",
+      "area": "A1",
+      "title": "Partner status: a discount on own orders, special rates for the partner and the sponsor, exclusion from group points and promotions",
+      "source": "A1-commission-annex.md:73",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-010",
+      "type": "C",
+      "area": "A1",
+      "title": "Tip-giver commission: an adjustable rate on the first order and a lower adjustable rate on following orders",
+      "source": "A1-commission-annex.md:74",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-011",
+      "type": "C",
+      "area": "A1",
+      "title": "Bonus programmes that count events in a period and pay an amount or a rate surcharge, with a membership condition and a limit per person",
+      "source": "A1-commission-annex.md:75",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-012",
+      "type": "C",
+      "area": "A1",
+      "title": "Advisor structure and customer assignments with their history, as a dated copy from the ERP, so that a past period is recalculated against the structure as it was",
+      "source": "A1-commission-annex.md:77",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-013",
+      "type": "C",
+      "area": "A1",
+      "title": "The settings screen of A1-D-013",
+      "source": "A1-commission-annex.md:83",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-014",
+      "type": "C",
+      "area": "A1",
+      "title": "The voucher cost rule of A1-D-014, with the two voucher marks read from the ERP (mandatory for all advisors; who pays)",
+      "source": "A1-commission-annex.md:84",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-015",
+      "type": "C",
+      "area": "A1",
+      "title": "Draft run with an exception list (large corrections, large differences to the previous month, negative statements), release by two persons, an audit trail",
+      "source": "A1-commission-annex.md:85",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-016",
+      "type": "C",
+      "area": "A1",
+      "title": "Statement per advisor in the portal, down to the customer, the order and the commission type. The released net amount per advisor and month goes to the ERP",
+      "source": "A1-commission-annex.md:86",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-017",
+      "type": "C",
+      "area": "A1",
+      "title": "A monthly run for twice today's statements is not slower than NAV's current run (section 5)",
+      "source": "A1-commission-annex.md:87",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-018",
+      "type": "C",
+      "area": "A1",
+      "title": "Comparison with NAV: import of NAV's monthly result per advisor and commission type; comparison per advisor, per type and in total, with a reason code and a note per difference; a monthly report against the switch criteria",
+      "source": "A1-commission-annex.md:88",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-019",
+      "type": "C",
+      "area": "A1",
+      "title": "Parallel mode: the run produces the statement but no ERP record",
+      "source": "A1-commission-annex.md:89",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-020",
+      "type": "C",
+      "area": "A1",
+      "title": "Switch: a dated setting, released by two persons of Finance. From that period the run creates the record for the ERP (NAV or Business Central), and NAV's results are no longer imported",
+      "source": "A1-commission-annex.md:90",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-C-021",
+      "type": "C",
+      "area": "A1",
+      "title": "Rates that depend on the order type: first order of a customer, repeat order, subscription order",
+      "source": "A1-commission-annex.md:99",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A1-C-022",
+      "type": "C",
+      "area": "A1",
+      "title": "Several plans at the same time, assigned per advisor group, so that existing advisors can stay on the current plan",
+      "source": "A1-commission-annex.md:100",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A1-C-023",
+      "type": "C",
+      "area": "A1",
+      "title": "Rule-set versions and plan comparison: calculate a draft rule set on past months and compare it with the actual result, per advisor and in total, before release",
+      "source": "A1-commission-annex.md:101",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A1-C-024",
+      "type": "C",
+      "area": "A1",
+      "title": "Bonuses for events from the platform's tasks and journeys",
+      "source": "A1-commission-annex.md:102",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A1-C-025",
+      "type": "C",
+      "area": "A1",
+      "title": "Fees per advisor, deducted from the commission as a statement line. A fee that Provital charges separately is an ERP invoice",
+      "source": "A1-commission-annex.md:103",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A1-C-026",
+      "type": "C",
+      "area": "A1",
+      "title": "Re-validation before the R2 go-live: the engine calculates one month from Business Central inputs and compares it with the NAV-fed run, with mapped advisor numbers. 57Blocks and TSO-DATA plan and scope this work separately, with R2",
+      "source": "A1-commission-annex.md:91",
+      "status": "active",
+      "release": "R2"
+    },
+    {
+      "id": "A1-C-027",
+      "type": "C",
+      "area": "A1",
+      "title": "The engine calculates the commission types of the approved rule set: the types of handbook 7/2025 and the types whose rule Provital confirms (A1-P-005). A further type follows through change control",
+      "source": "A1-commission-annex.md:76",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A1-D-001",
+      "type": "D",
+      "area": "A1",
+      "title": "The platform calculates the commission and produces the statement. The ERP books the released result on the advisor's creditor account and creates the payment file. The portal explains the amount; an e-mail notification stays",
+      "source": "A1-commission-annex.md:30",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-002",
+      "type": "D",
+      "area": "A1",
+      "title": "The ERP holds the VAT entitlement per advisor and adds the VAT at payout",
+      "source": "A1-commission-annex.md:31",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-003",
+      "type": "D",
+      "area": "A1",
+      "title": "57Blocks tests the engine on NAV's history during the build. From R1 it calculates every month next to NAV without booking (the parallel run). NAV calculates and pays until Provital decides the switch",
+      "source": "A1-commission-annex.md:32",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-004",
+      "type": "D",
+      "area": "A1",
+      "title": "Business Central never calculates commission. The switch happens at the latest at R2; the switch criteria (section 5) are its condition. The parallel run continues until Provital accepts the result. Finance classifies each difference as engine, NAV, data or plan. 57Blocks corrects every difference …",
+      "source": "A1-commission-annex.md:33",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-005",
+      "type": "D",
+      "area": "A1",
+      "title": "R1 starts with the plan in force. Plan changes follow the switch. If Provital changes the plan before the switch, Provital's NAV developer builds the change in NAV as well",
+      "source": "A1-commission-annex.md:34",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-006",
+      "type": "D",
+      "area": "A1",
+      "title": "Until the switch the portal shows NAV's settled statement as binding. The platform calculates a current-month forecast. Provital sales decides whether advisors see it",
+      "source": "A1-commission-annex.md:35",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-007",
+      "type": "D",
+      "area": "A1",
+      "title": "In pilot mode NAV calculates the commission for pilot advisors' orders (A7)",
+      "source": "A1-commission-annex.md:36",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-008",
+      "type": "D",
+      "area": "A1",
+      "title": "An entry package counts for points and commission like a normal purchase. Provital can set a package to zero points later",
+      "source": "A1-commission-annex.md:37",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-009",
+      "type": "D",
+      "area": "A1",
+      "title": "The catch-all advisor of head office receives a statement that is calculated and not paid",
+      "source": "A1-commission-annex.md:38",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-010",
+      "type": "D",
+      "area": "A1",
+      "title": "A settled and paid statement never changes. A return, a complaint or a correction enters the next open statement as a new line, valued with the points and the rate of the original order",
+      "source": "A1-commission-annex.md:39",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-011",
+      "type": "D",
+      "area": "A1",
+      "title": "A return normally comes within two months, a complaint within two years. The engine reverses an order up to two years back",
+      "source": "A1-commission-annex.md:40",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-012",
+      "type": "D",
+      "area": "A1",
+      "title": "The customer protection runs from the customer's last invoice. The protection period is today six months. Each invoice renews it; a changed period applies from the next order. The period is a setting. An order through another advisor's link while the protection runs counts for the protecting …",
+      "source": "A1-commission-annex.md:41",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-013",
+      "type": "D",
+      "area": "A1",
+      "title": "Every parameter of the plan in force is adjustable from R1, with an effective date. Very few named roles may change one. A second person releases a change; a log records user, date and reason. The management of several plans is R1.x (section 4.3)",
+      "source": "A1-commission-annex.md:42",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-014",
+      "type": "D",
+      "area": "A1",
+      "title": "Voucher cost rule: an advisor's own voucher reduces the advisor's commission. The company pays a central campaign, and an advisor cannot opt out. The commission uses the net price after the rebate. At R1 no advisor voucher exists (A3-O-003). The rule applies when Provital allows one",
+      "source": "A1-commission-annex.md:43",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-015",
+      "type": "D",
+      "area": "A1",
+      "title": "Head office enters manual point corrections in the ERP: a plus or minus entry per advisor with a comment, restricted to few people, also as a bulk upload. The engine reads them",
+      "source": "A1-commission-annex.md:44",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-016",
+      "type": "D",
+      "area": "A1",
+      "title": "The engine recalculates two years back from the migrated structure history and commission inputs. Finance and IT confirm that the data is complete enough",
+      "source": "A1-commission-annex.md:50",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-017",
+      "type": "D",
+      "area": "A1",
+      "title": "Points per invoice line are taken as booked in the ERP. For a bundle line, the bundle rule (section 5) derives them",
+      "source": "A1-commission-annex.md:51",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-018",
+      "type": "D",
+      "area": "A1",
+      "title": "Training progress for the level condition comes from the ERP",
+      "source": "A1-commission-annex.md:52",
+      "status": "active"
+    },
+    {
+      "id": "A1-D-019",
+      "type": "D",
+      "area": "A1",
+      "title": "A later plan uses the capabilities of section 4.3. Provital and 57Blocks plan them at least three months before the plan change",
+      "source": "A1-commission-annex.md:53",
+      "status": "active"
+    },
+    {
+      "id": "A1-P-001",
+      "type": "P",
+      "area": "A1",
+      "title": "NAV delivers its monthly result per advisor and commission type, and the code of the NAV commission job",
+      "source": "A1-commission-annex.md:145",
+      "status": "active"
+    },
+    {
+      "id": "A1-P-004",
+      "type": "P",
+      "area": "A1",
+      "title": "Provital's NAV developer builds the NAV import of the platform's released result, with the credit note",
+      "source": "A1-commission-annex.md:148",
+      "status": "active"
+    },
+    {
+      "id": "A1-P-005",
+      "type": "P",
+      "area": "A1",
+      "title": "NAV's monthly check sheet also shows Sammelbesteller, Fixprovision, Variable Provision and Lieferdirekt, which the handbook does not define. For each type, Provital confirms its rule from the NAV commission job, or confirms that it is no longer paid",
+      "source": "A1-commission-annex.md:146",
+      "status": "active"
+    },
+    {
+      "id": "A1-P-006",
+      "type": "P",
+      "area": "A1",
+      "title": "Today's tip-giver rates (assumed 10 % and 5 %) and the number of tip-givers per customer",
+      "source": "A1-commission-annex.md:147",
+      "status": "active"
+    },
+    {
+      "id": "A1-P-007",
+      "type": "P",
+      "area": "A1",
+      "title": "NAV holds the point corrections of A1-D-015, with the comment and the bulk upload. Business Central does the same at R2",
+      "source": "A1-commission-annex.md:149",
+      "status": "active"
+    },
+    {
+      "id": "A2-AC-001",
+      "type": "AC",
+      "area": "A2",
+      "title": "An order reaches the ERP once, with the values, advisor and payment reference that the shop used, also after a retry or an ERP outage",
+      "source": "A2-orders-subscriptions-payments-annex.md:115",
+      "status": "active"
+    },
+    {
+      "id": "A2-AC-002",
+      "type": "AC",
+      "area": "A2",
+      "title": "The platform sends each order and each new customer once, with a business key. The daily reconciliation lists every difference. The ERP's matching creates or links the contact",
+      "source": "A2-orders-subscriptions-payments-annex.md:116",
+      "status": "active"
+    },
+    {
+      "id": "A2-AC-003",
+      "type": "AC",
+      "area": "A2",
+      "title": "The simulated subscription run on migrated data produces every due delivery exactly once, including the cutover night",
+      "source": "A2-orders-subscriptions-payments-annex.md:117",
+      "status": "active"
+    },
+    {
+      "id": "A2-AC-004",
+      "type": "AC",
+      "area": "A2",
+      "title": "A delivery whose payment method fails the check at the cutoff is held before the hand-off, with the reason visible to customer and advisor. A charge that fails at shipment shows as an open item in the ERP",
+      "source": "A2-orders-subscriptions-payments-annex.md:118",
+      "status": "active"
+    },
+    {
+      "id": "A2-AC-005",
+      "type": "AC",
+      "area": "A2",
+      "title": "A guest order creates a contact in the ERP; the account link follows the legal decision",
+      "source": "A2-orders-subscriptions-payments-annex.md:119",
+      "status": "active"
+    },
+    {
+      "id": "A2-AC-006",
+      "type": "AC",
+      "area": "A2",
+      "title": "The checkout offers the methods that the ERP allows for the customer, or card and PayPal without ERP data. The platform never changes a limit, a block or a method",
+      "source": "A2-orders-subscriptions-payments-annex.md:120",
+      "status": "active"
+    },
+    {
+      "id": "A2-C-001",
+      "type": "C",
+      "area": "A2",
+      "title": "Cart and checkout for a one-off order, a subscription order and an advisor-prepared order, which the customer approves",
+      "source": "A2-orders-subscriptions-payments-annex.md:55",
+      "status": "active",
+      "release": "RC; subscription order: R1"
+    },
+    {
+      "id": "A2-C-002",
+      "type": "C",
+      "area": "A2",
+      "title": "Checks before the hand-off: address and postal code, stock, duplicate order and customer (the ERP's matching stays the authority), voucher (A2-C-028) and campaign validity. A failed order goes to the clarification queue",
+      "source": "A2-orders-subscriptions-payments-annex.md:56",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-003",
+      "type": "C",
+      "area": "A2",
+      "title": "Each order carries the price, campaign and voucher used, with their version, the payment reference and status, the attributed advisor and the order type",
+      "source": "A2-orders-subscriptions-payments-annex.md:57",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-004",
+      "type": "C",
+      "area": "A2",
+      "title": "Repeatable hand-off: an outbox until the ERP confirms, retry after a failure, a number range that cannot collide with the current shop's, a daily reconciliation against the ERP status",
+      "source": "A2-orders-subscriptions-payments-annex.md:58",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-005",
+      "type": "C",
+      "area": "A2",
+      "title": "During an ERP outage orders wait in the outbox (T2)",
+      "source": "A2-orders-subscriptions-payments-annex.md:59",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-006",
+      "type": "C",
+      "area": "A2",
+      "title": "Read-only order status from the ERP (accepted, invoiced, shipped with tracking, returned)",
+      "source": "A2-orders-subscriptions-payments-annex.md:60",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-007",
+      "type": "C",
+      "area": "A2",
+      "title": "Change or cancel an order inside an adjustable window, until the hand-off",
+      "source": "A2-orders-subscriptions-payments-annex.md:61",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-008",
+      "type": "C",
+      "area": "A2",
+      "title": "Guest checkout: the order is marked so that the ERP creates the contact; the link of guest orders to an account",
+      "source": "A2-orders-subscriptions-payments-annex.md:62",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-009",
+      "type": "C",
+      "area": "A2",
+      "title": "Return or complaint request from the account and the advisor portal: reason, order, photos. Approval cases follow the self-service rule set (A4). It creates a ticket and an ERP return; the status returns to the account. Inside the withdrawal period it shows the return conditions from A2-P-004",
+      "source": "A2-orders-subscriptions-payments-annex.md:65",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-010",
+      "type": "C",
+      "area": "A2",
+      "title": "Create a subscription from the checkout or an order: products, quantities, interval, start date, an ERP delivery address of the customer, the payment method",
+      "source": "A2-orders-subscriptions-payments-annex.md:71",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-011",
+      "type": "C",
+      "area": "A2",
+      "title": "Self-service until the cutoff: products, quantities, pause, skip, move the next delivery, interval, address, payment method, cancel. The shop shows which delivery a change applies to. An address change reaches the ERP before the next hand-off",
+      "source": "A2-orders-subscriptions-payments-annex.md:72",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-012",
+      "type": "C",
+      "area": "A2",
+      "title": "Schedule settings as listed in the subscription-deadlines rule set (section 5)",
+      "source": "A2-orders-subscriptions-payments-annex.md:73",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-013",
+      "type": "C",
+      "area": "A2",
+      "title": "Reminder before the cutoff and confirmation after a change (A4)",
+      "source": "A2-orders-subscriptions-payments-annex.md:74",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-014",
+      "type": "C",
+      "area": "A2",
+      "title": "Due-delivery run: at the cutoff the platform creates the order of each due delivery with the subscription marker and hands it over (A2-C-004). A rule can combine a customer's deliveries due on the same day",
+      "source": "A2-orders-subscriptions-payments-annex.md:75",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-015",
+      "type": "C",
+      "area": "A2",
+      "title": "Hold rules: a delivery that cannot run is held with a reason; customer and advisor are informed; a retry or skip follows by rule; head office sees it in the subscription cases of the head office portal",
+      "source": "A2-orders-subscriptions-payments-annex.md:76",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-016",
+      "type": "C",
+      "area": "A2",
+      "title": "The advisor proposes a subscription change; the customer approves it",
+      "source": "A2-orders-subscriptions-payments-annex.md:77",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-017",
+      "type": "C",
+      "area": "A2",
+      "title": "Customer-service view: search, change, hold and cancel a subscription as the last instance, with an audit trail",
+      "source": "A2-orders-subscriptions-payments-annex.md:78",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-018",
+      "type": "C",
+      "area": "A2",
+      "title": "Subscription migration from NAV with the next delivery date, products and payment reference; a simulated run shows no lost or duplicated delivery (T1)",
+      "source": "A2-orders-subscriptions-payments-annex.md:79",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-019",
+      "type": "C",
+      "area": "A2",
+      "title": "Checkout payments by card and iDEAL through the payment provider, and by PayPal through Provital's account. Reference and status go to the ERP with the order",
+      "source": "A2-orders-subscriptions-payments-annex.md:85",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-020",
+      "type": "C",
+      "area": "A2",
+      "title": "Payment methods per country, customer role and order type as a rule set, inside the methods that the ERP allows (A2-C-022)",
+      "source": "A2-orders-subscriptions-payments-annex.md:86",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-021",
+      "type": "C",
+      "area": "A2",
+      "title": "Payment agreements for subscriptions: the platform stores the card token and the PayPal billing agreement (existing PayPal agreements reused with Provital's current business account: A2-P-001). Direct-debit data goes to the ERP (mandate: T1-O-007)",
+      "source": "A2-orders-subscriptions-payments-annex.md:87",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-022",
+      "type": "C",
+      "area": "A2",
+      "title": "The allowed payment methods per customer, read from the ERP, and the default without ERP data (A2-D-007)",
+      "source": "A2-orders-subscriptions-payments-annex.md:88",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-023",
+      "type": "C",
+      "area": "A2",
+      "title": "The subscription charge. At the cutoff the platform checks the payment method. A delivery with an unusable payment method is held before the hand-off. At the shipment report the platform charges the reported amount and sends the reference to the ERP. A charge that fails after shipment becomes an …",
+      "source": "A2-orders-subscriptions-payments-annex.md:89",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A2-C-024",
+      "type": "C",
+      "area": "A2",
+      "title": "Refunds of card and PayPal payments on request of the ERP, with the requesting user and the reason in the audit trail. A paid order that the ERP cannot fill goes to the clarification queue; head office informs the customer, and the ERP requests the refund",
+      "source": "A2-orders-subscriptions-payments-annex.md:90",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-025",
+      "type": "C",
+      "area": "A2",
+      "title": "Provider status events (paid, failed, refunded, chargeback) are recorded and forwarded to the ERP",
+      "source": "A2-orders-subscriptions-payments-annex.md:91",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-026",
+      "type": "C",
+      "area": "A2",
+      "title": "Online withdrawal: the customer declares a withdrawal in the account or through a form without login; the platform confirms receipt and hands it to the ERP (T2-C-006). Texts: A2-P-004",
+      "source": "A2-orders-subscriptions-payments-annex.md:92",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-C-027",
+      "type": "C",
+      "area": "A2",
+      "title": "The checkout applies the shipping-fee rules that head office defines in the ERP (DP1 §3.1), for example carrier choice by parcel weight, a free-shipping threshold, customer pickup, loyalty points against the fee. The ERP keeps the points balance; the platform reads it",
+      "source": "A2-orders-subscriptions-payments-annex.md:63",
+      "status": "active",
+      "release": "RC; loyalty points: R1"
+    },
+    {
+      "id": "A2-C-028",
+      "type": "C",
+      "area": "A2",
+      "title": "Vouchers: an article with a negative price, which the ERP manages like an article; the platform shows it and redeems it at the checkout. The checkout supports these condition types: validity period, minimum order value, product or category scope, customer group or role, single use per customer, one …",
+      "source": "A2-orders-subscriptions-payments-annex.md:64",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A2-D-001",
+      "type": "D",
+      "area": "A2",
+      "title": "The customer keeps the subscription self-service until the cutoff (a setting; today seven days before the delivery; Provital may set five). Then the order goes to the ERP and cannot change. The shop says that a later change applies to the next delivery",
+      "source": "A2-orders-subscriptions-payments-annex.md:31",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-002",
+      "type": "D",
+      "area": "A2",
+      "title": "Subscriptions run in the platform at R1 and after R2. The ERP receives each due delivery as an order with a subscription marker and does not use its own subscription module",
+      "source": "A2-orders-subscriptions-payments-annex.md:32",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-003",
+      "type": "D",
+      "area": "A2",
+      "title": "A subscription supports card, PayPal, direct debit and payment on invoice (inside the credit limit). iDEAL and prepayment are for one-off orders only. Provital promotes card",
+      "source": "A2-orders-subscriptions-payments-annex.md:33",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-004",
+      "type": "D",
+      "area": "A2",
+      "title": "Before the hand-off the shop validates address and postal code and checks stock and duplicates",
+      "source": "A2-orders-subscriptions-payments-annex.md:34",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-005",
+      "type": "D",
+      "area": "A2",
+      "title": "The ERP is the master of an order from the ERP's acceptance. Until then the platform owns the cart, the checkout and the subscription orders; after it, a read-only status copy",
+      "source": "A2-orders-subscriptions-payments-annex.md:35",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-006",
+      "type": "D",
+      "area": "A2",
+      "title": "The guest checkout stays. Guest orders of one person are linked to the customer account in the background when the law allows it. A guest order creates a contact in the ERP",
+      "source": "A2-orders-subscriptions-payments-annex.md:36",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-007",
+      "type": "D",
+      "area": "A2",
+      "title": "The ERP holds the blacklist flag, the temporary block and the credit limit. It sends the allowed payment methods per customer; if the ERP data is missing or older than the maximum age (section 5), card and PayPal apply. The platform never changes the blacklist flag, the temporary block, the credit …",
+      "source": "A2-orders-subscriptions-payments-annex.md:37",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-008",
+      "type": "D",
+      "area": "A2",
+      "title": "From RC, pilot advisors and their customers place one-off orders in the platform. They go to production NAV through the normal hand-off. Subscriptions stay in the current shop until the cutover (A7)",
+      "source": "A2-orders-subscriptions-payments-annex.md:38",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-009",
+      "type": "D",
+      "area": "A2",
+      "title": "Subscription charging. In R1 the platform charges card and PayPal for a subscription delivery when the ERP reports the shipment (the invoice date). The ERP decides and books a refund; the platform executes it. Direct debit and payment on invoice stay in the ERP. Before R2, Provital and TSO-DATA can …",
+      "source": "A2-orders-subscriptions-payments-annex.md:44",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-010",
+      "type": "D",
+      "area": "A2",
+      "title": "No payment on invoice for a new customer. An ERP rule can allow it later, for example after five paid orders. The ERP can extend the methods per customer, for example direct debit",
+      "source": "A2-orders-subscriptions-payments-annex.md:45",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-011",
+      "type": "D",
+      "area": "A2",
+      "title": "The guest checkout asks only for the data that the order needs. The background link starts when legal counsel allows it",
+      "source": "A2-orders-subscriptions-payments-annex.md:46",
+      "status": "active"
+    },
+    {
+      "id": "A2-D-012",
+      "type": "D",
+      "area": "A2",
+      "title": "For an accepted return, the platform requests the label from the carrier's return service on Provital's account",
+      "source": "A2-orders-subscriptions-payments-annex.md:47",
+      "status": "active"
+    },
+    {
+      "id": "A2-P-001",
+      "type": "P",
+      "area": "A2",
+      "title": "Access to Provital's PayPal business account, and the export of the billing agreement IDs and their charge history. Reuse works with the current account (checked)",
+      "source": "A2-orders-subscriptions-payments-annex.md:126",
+      "status": "active"
+    },
+    {
+      "id": "A2-P-002",
+      "type": "P",
+      "area": "A2",
+      "title": "The payment matrix and provider access. 57Blocks proposes the matrix from the current system",
+      "source": "A2-orders-subscriptions-payments-annex.md:127",
+      "status": "active"
+    },
+    {
+      "id": "A2-P-003",
+      "type": "P",
+      "area": "A2",
+      "title": "NAV exports the active subscriptions with the next delivery date and the payment reference (T1-P-002)",
+      "source": "A2-orders-subscriptions-payments-annex.md:128",
+      "status": "active"
+    },
+    {
+      "id": "A2-P-004",
+      "type": "P",
+      "area": "A2",
+      "title": "Legal counsel confirms the online withdrawal texts and the return conditions that the return request (A2-C-009) shows inside the withdrawal period",
+      "source": "A2-orders-subscriptions-payments-annex.md:129",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-001",
+      "type": "AC",
+      "area": "A3",
+      "title": "Each of the four entry flows reaches the purchase in at most three checkout steps (address, payment, confirmation), counted from the cart or the prepared basket, with the attribution of the entry in the order",
+      "source": "A3-shop-advisor-portal-annex.md:109",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-002",
+      "type": "AC",
+      "area": "A3",
+      "title": "An order that starts on an advisor's link or path carries that advisor as the entry. The ERP applies the protection rule and returns the attributed advisor, and the account shows that advisor. A link does not move a customer who is protected for another advisor. While the fallback of DP1 section 6 …",
+      "source": "A3-shop-advisor-portal-annex.md:110",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-003",
+      "type": "AC",
+      "area": "A3",
+      "title": "Each old domain that Provital owns, and each old page of the redirect list, answers with a permanent redirect to the target page",
+      "source": "A3-shop-advisor-portal-annex.md:111",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-004",
+      "type": "AC",
+      "area": "A3",
+      "title": "A calculator adds a product to the cart",
+      "source": "A3-shop-advisor-portal-annex.md:112",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-005",
+      "type": "AC",
+      "area": "A3",
+      "title": "A voucher from the ERP is redeemed from the read copy under the condition types of A2-C-028, only one per checkout, and the order carries the voucher version",
+      "source": "A3-shop-advisor-portal-annex.md:113",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-006",
+      "type": "AC",
+      "area": "A3",
+      "title": "The advisor page is public only inside the structure, the visibility per item and the moderation rule",
+      "source": "A3-shop-advisor-portal-annex.md:114",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-007",
+      "type": "AC",
+      "area": "A3",
+      "title": "The figures of the month match the commission run for the same period, and each KPI names its source",
+      "source": "A3-shop-advisor-portal-annex.md:115",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-008",
+      "type": "AC",
+      "area": "A3",
+      "title": "Head office creates and changes each page type of A3-C-023 without a developer",
+      "source": "A3-shop-advisor-portal-annex.md:116",
+      "status": "active"
+    },
+    {
+      "id": "A3-AC-009",
+      "type": "AC",
+      "area": "A3",
+      "title": "A returning customer sees the \"what's new\" section on the first screen. Analytics events go to the tool only after consent",
+      "source": "A3-shop-advisor-portal-annex.md:117",
+      "status": "active"
+    },
+    {
+      "id": "A3-C-001",
+      "type": "C",
+      "area": "A3",
+      "title": "The main domain with a path per advisor; permanent redirects from the old advisor domains that Provital owns, from the pages of the redirect list, the current shop and the pilot address; the sitemap. The advisor path carries the advisor into the order",
+      "source": "A3-shop-advisor-portal-annex.md:47",
+      "status": "active",
+      "release": "RC; redirects and sitemap: R1"
+    },
+    {
+      "id": "A3-C-002",
+      "type": "C",
+      "area": "A3",
+      "title": "A catalogue from the read copy: categories, product pages, search, filters, cross-selling, stock display, points per product, the price for the customer's role and country",
+      "source": "A3-shop-advisor-portal-annex.md:48",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-003",
+      "type": "C",
+      "area": "A3",
+      "title": "The four entry flows: direct visit, advisor link, prepared basket, live sale on a tablet. Each starts the checkout at the right step and carries its attribution",
+      "source": "A3-shop-advisor-portal-annex.md:49",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-004",
+      "type": "C",
+      "area": "A3",
+      "title": "The checkout in at most three steps: address, payment, confirmation, with the payment method by rule, the shipping-fee rules (A2-C-027) and the guest option from R1",
+      "source": "A3-shop-advisor-portal-annex.md:50",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-005",
+      "type": "C",
+      "area": "A3",
+      "title": "Vouchers at the checkout (A2-C-028): redeem from the read copy, one per checkout, with the two marks and the benefit voucher per role. The order carries the voucher and its version",
+      "source": "A3-shop-advisor-portal-annex.md:51",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-006",
+      "type": "C",
+      "area": "A3",
+      "title": "The five calculators; each adds a product to the cart",
+      "source": "A3-shop-advisor-portal-annex.md:52",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-007",
+      "type": "C",
+      "area": "A3",
+      "title": "Re-order from the order history and the back-in-stock reminder",
+      "source": "A3-shop-advisor-portal-annex.md:54",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-008",
+      "type": "C",
+      "area": "A3",
+      "title": "Products of other brands in the ANIfit shop: a normal product page in the ANIfit design with the product images, and the imprint on provital.com",
+      "source": "A3-shop-advisor-portal-annex.md:55",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-009",
+      "type": "C",
+      "area": "A3",
+      "title": "The account: registration, login, a new password at the first login after the migration, the profile, the addresses, the pets, the consents and the preferences",
+      "source": "A3-shop-advisor-portal-annex.md:65",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-010",
+      "type": "C",
+      "area": "A3",
+      "title": "The order view with status and tracking from the ERP copy, the invoice and the delivery note as a document",
+      "source": "A3-shop-advisor-portal-annex.md:66",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-011",
+      "type": "C",
+      "area": "A3",
+      "title": "The subscription view with the changes of A2-C-011",
+      "source": "A3-shop-advisor-portal-annex.md:67",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-012",
+      "type": "C",
+      "area": "A3",
+      "title": "The return or complaint request, with the status of the ticket, within the self-service rules of A4",
+      "source": "A3-shop-advisor-portal-annex.md:68",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-013",
+      "type": "C",
+      "area": "A3",
+      "title": "The vouchers in the profile: the loyalty vouchers for a limited time, and the campaign vouchers reached from the link in the e-mail",
+      "source": "A3-shop-advisor-portal-annex.md:69",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-014",
+      "type": "C",
+      "area": "A3",
+      "title": "Consent and preference management, with a record per consent and its date and source",
+      "source": "A3-shop-advisor-portal-annex.md:70",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-015",
+      "type": "C",
+      "area": "A3",
+      "title": "The advisor page of section 3, with the visibility per item, the AI help and checks, and the moderation",
+      "source": "A3-shop-advisor-portal-annex.md:76",
+      "status": "active",
+      "release": "RC; AI help and checks: R1"
+    },
+    {
+      "id": "A3-C-016",
+      "type": "C",
+      "area": "A3",
+      "title": "The customer view in the portal: the advisor's own customers, the last orders, the subscriptions (from R1), the pets, the next due contact, and the e-mail to the customer (A4-C-017)",
+      "source": "A3-shop-advisor-portal-annex.md:77",
+      "status": "active",
+      "release": "RC; the e-mail: R1"
+    },
+    {
+      "id": "A3-C-017",
+      "type": "C",
+      "area": "A3",
+      "title": "The to-do list with the reason per item, the step lists and the escalation, and the leads with their next step",
+      "source": "A3-shop-advisor-portal-annex.md:78",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-018",
+      "type": "C",
+      "area": "A3",
+      "title": "The prepared basket and the live sale: the advisor builds an order, the customer approves it in their account or on the tablet",
+      "source": "A3-shop-advisor-portal-annex.md:79",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-019",
+      "type": "C",
+      "area": "A3",
+      "title": "The figures of the month for the advisor: points, the level and the progress, the team, the open items and the statement link",
+      "source": "A3-shop-advisor-portal-annex.md:80",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-020",
+      "type": "C",
+      "area": "A3",
+      "title": "The team view for a leader and the field report for head office, from platform data and the ERP data that the interfaces carry",
+      "source": "A3-shop-advisor-portal-annex.md:81",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-021",
+      "type": "C",
+      "area": "A3",
+      "title": "The contact form to head office and the messages, and the event and training entry (A4-C-016)",
+      "source": "A3-shop-advisor-portal-annex.md:82",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-022",
+      "type": "C",
+      "area": "A3",
+      "title": "The KPI definitions as a rule set, each KPI computed from platform data or from a named ERP interface",
+      "source": "A3-shop-advisor-portal-annex.md:83",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-023",
+      "type": "C",
+      "area": "A3",
+      "title": "Page types for content maintenance: the general landing page, the product-focused page, category pages, product pages, content pages with text, image and video blocks, and a page with frequent questions. Head office maintains their content in the content function (A5-C-015)",
+      "source": "A3-shop-advisor-portal-annex.md:59",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A3-C-024",
+      "type": "C",
+      "area": "A3",
+      "title": "The calculator lead: the result creates a small profile with e-mail and name and a lead in the advisor's profile; the calculator runs under the advisor's path",
+      "source": "A3-shop-advisor-portal-annex.md:53",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A3-C-025",
+      "type": "C",
+      "area": "A3",
+      "title": "The returning-customer page with the \"what's new\" section (section 3)",
+      "source": "A3-shop-advisor-portal-annex.md:56",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-026",
+      "type": "C",
+      "area": "A3",
+      "title": "Web analytics (section 3), only with the visitor's consent, sent to the one tool that Provital names (A3-P-003)",
+      "source": "A3-shop-advisor-portal-annex.md:57",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A3-C-027",
+      "type": "C",
+      "area": "A3",
+      "title": "A/B tests of the shop: a page or component variant, a visitor split and the result per variant. R1 runs one design",
+      "source": "A3-shop-advisor-portal-annex.md:58",
+      "status": "active",
+      "release": "Readiness (pages and components can carry a variant): R1; the test function: R1.x"
+    },
+    {
+      "id": "A3-O-001",
+      "type": "O",
+      "area": "A3",
+      "title": "Virtual advisor stock is not in the platform. An advisor orders for a customer as any customer does, at the current conditions, and the ERP ships",
+      "source": "A3-shop-advisor-portal-annex.md:125",
+      "status": "active"
+    },
+    {
+      "id": "A3-O-002",
+      "type": "O",
+      "area": "A3",
+      "title": "Secondary functions by release. R1: re-order and the back-in-stock reminder. R1.x: the calculator lead (A3-C-024), the post library, the installable web app and push messages. Reviews, free samples, appointment booking and the charity add-on are not planned. R1.x: README section 4",
+      "source": "A3-shop-advisor-portal-annex.md:126",
+      "status": "active"
+    },
+    {
+      "id": "A3-O-003",
+      "type": "O",
+      "area": "A3",
+      "title": "No advisor voucher at R1. Head office steers the campaigns and vouchers centrally. The voucher function of the session notes is the ERP voucher article that the platform shows and redeems (A2-C-028)",
+      "source": "A3-shop-advisor-portal-annex.md:127",
+      "status": "active"
+    },
+    {
+      "id": "A3-O-005",
+      "type": "O",
+      "area": "A3",
+      "title": "A customer keeps several delivery addresses in the account. The ERP holds the invoice address",
+      "source": "A3-shop-advisor-portal-annex.md:128",
+      "status": "active"
+    },
+    {
+      "id": "A3-P-001",
+      "type": "P",
+      "area": "A3",
+      "title": "The redirect list with each source and target, including the pilot address (A7-D-003) with the advisor path as target; the cutover checks every entry",
+      "source": "A3-shop-advisor-portal-annex.md:132",
+      "status": "active"
+    },
+    {
+      "id": "A3-P-002",
+      "type": "P",
+      "area": "A3",
+      "title": "The product content per product, and the final brand book",
+      "source": "A3-shop-advisor-portal-annex.md:133",
+      "status": "active"
+    },
+    {
+      "id": "A3-P-003",
+      "type": "P",
+      "area": "A3",
+      "title": "The web analytics tool, cleared by the data protection officer",
+      "source": "A3-shop-advisor-portal-annex.md:134",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-001",
+      "type": "AC",
+      "area": "A4",
+      "title": "A journey starts on its trigger, sends at the set time, creates its task or stops on its condition",
+      "source": "A4-journeys-tasks-back-office-annex.md:116",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-002",
+      "type": "AC",
+      "area": "A4",
+      "title": "Every task shows its reason, its step list and its due date, and escalates after the deadline",
+      "source": "A4-journeys-tasks-back-office-annex.md:117",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-003",
+      "type": "AC",
+      "area": "A4",
+      "title": "A lead keeps its double opt-in and next step, and reaches the advisor whose link or path captured it",
+      "source": "A4-journeys-tasks-back-office-annex.md:118",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-004",
+      "type": "AC",
+      "area": "A4",
+      "title": "An approval case waits for customer service; another case runs into the ERP without a manual step. Every change on behalf of a customer sends the customer a message",
+      "source": "A4-journeys-tasks-back-office-annex.md:119",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-005",
+      "type": "AC",
+      "area": "A4",
+      "title": "For a complaint that starts in the platform, the feedback e-mail goes out after 72 hours only if no advisor message through the platform and no \"done\" on the task came first",
+      "source": "A4-journeys-tasks-back-office-annex.md:120",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-006",
+      "type": "AC",
+      "area": "A4",
+      "title": "The head office portal has the screens of the list confirmed in DP1 §3.3 and its admin functions. A role sees only what the staff-role rule set allows. Customer service reads statements only",
+      "source": "A4-journeys-tasks-back-office-annex.md:121",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-007",
+      "type": "AC",
+      "area": "A4",
+      "title": "No marketing or journey e-mail goes to a customer without a consent record that covers it. A transactional e-mail (order, password) needs no marketing consent",
+      "source": "A4-journeys-tasks-back-office-annex.md:122",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-008",
+      "type": "AC",
+      "area": "A4",
+      "title": "An advisor message shows the advisor's name as the sender, a reply reaches the advisor, and the customer profile logs the message",
+      "source": "A4-journeys-tasks-back-office-annex.md:123",
+      "status": "active"
+    },
+    {
+      "id": "A4-AC-009",
+      "type": "AC",
+      "area": "A4",
+      "title": "A registered advisor gets the advisor role only after the ERP records the approval, and an exit in the ERP ends the role",
+      "source": "A4-journeys-tasks-back-office-annex.md:124",
+      "status": "active"
+    },
+    {
+      "id": "A4-C-001",
+      "type": "C",
+      "area": "A4",
+      "title": "The journey engine: one trigger of a type of A4-O-001, channels (e-mail, task), timing, content, stop condition, escalation to a task",
+      "source": "A4-journeys-tasks-back-office-annex.md:50",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-002",
+      "type": "C",
+      "area": "A4",
+      "title": "The journeys of Provital's journey rule set that use the trigger types of A4-O-001, set up by 57Blocks. Examples: first order, customer or pet birthday, anniversary, days since the last order, subscription end",
+      "source": "A4-journeys-tasks-back-office-annex.md:51",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-003",
+      "type": "C",
+      "area": "A4",
+      "title": "The task list with the reason per item, the step list, the due date, the escalation after a deadline, and the handover to customer service",
+      "source": "A4-journeys-tasks-back-office-annex.md:53",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-004",
+      "type": "C",
+      "area": "A4",
+      "title": "The 72-hour feedback rule (A4-O-005) for a complaint that starts in the platform (contact form, task, customer message)",
+      "source": "A4-journeys-tasks-back-office-annex.md:54",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-005",
+      "type": "C",
+      "area": "A4",
+      "title": "The event catalogue: the platform events (order, delivery, account, consent, subscription, calculator, task) and the ERP events that an interface carries (invoice, payment, return)",
+      "source": "A4-journeys-tasks-back-office-annex.md:55",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-006",
+      "type": "C",
+      "area": "A4",
+      "title": "The online lead: the form with a double opt-in, the lead in the advisor's profile with its next step, the consultation proposal, the reminders, and the expiry rule",
+      "source": "A4-journeys-tasks-back-office-annex.md:61",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-007",
+      "type": "C",
+      "area": "A4",
+      "title": "The offline assisted lead: the advisor records the customer and sends a prepared basket by e-mail; the customer confirms and checks out",
+      "source": "A4-journeys-tasks-back-office-annex.md:62",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-008",
+      "type": "C",
+      "area": "A4",
+      "title": "Advisor registration in the platform; approval and advisor number in the ERP; the role starts when the ERP records the approval",
+      "source": "A4-journeys-tasks-back-office-annex.md:63",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-009",
+      "type": "C",
+      "area": "A4",
+      "title": "Offboarding: the ERP records the exit and the role ends. Head office moves customers and downline in the ERP, to the direct upline by default; the platform reads the result",
+      "source": "A4-journeys-tasks-back-office-annex.md:64",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-010",
+      "type": "C",
+      "area": "A4",
+      "title": "The onboarding journey and its step list for a new advisor",
+      "source": "A4-journeys-tasks-back-office-annex.md:65",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A4-C-011",
+      "type": "C",
+      "area": "A4",
+      "title": "The screens of the head office portal (DP1 §3.3): commission settings and the review of the monthly run; subscription cases; the clarification queue; the approval of a defined self-service case; the moderation of advisor content; the KPI and report screens for head office; the content function for …",
+      "source": "A4-journeys-tasks-back-office-annex.md:72",
+      "status": "active",
+      "release": "RC: clarification queue, moderation, content function; others: R1"
+    },
+    {
+      "id": "A4-C-012",
+      "type": "C",
+      "area": "A4",
+      "title": "The self-service rule set: who may change what, which case needs an approval, the daily report of the changes to the customer-service lead",
+      "source": "A4-journeys-tasks-back-office-annex.md:75",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-013",
+      "type": "C",
+      "area": "A4",
+      "title": "The e-mail function: templates per language, the send record, the bounce and complaint handling, and the unsubscribe per consent",
+      "source": "A4-journeys-tasks-back-office-annex.md:76",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A4-C-014",
+      "type": "C",
+      "area": "A4",
+      "title": "The contact form to customer service: it creates a ticket through the open API and shows the ticket status in the customer account",
+      "source": "A4-journeys-tasks-back-office-annex.md:78",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A4-C-015",
+      "type": "C",
+      "area": "A4",
+      "title": "The API to the e-mail marketing system: the event, segment and consent that campaigns need",
+      "source": "A4-journeys-tasks-back-office-annex.md:79",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-016",
+      "type": "C",
+      "area": "A4",
+      "title": "The event and training entry in the advisor portal, with registration and reminder",
+      "source": "A4-journeys-tasks-back-office-annex.md:80",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-017",
+      "type": "C",
+      "area": "A4",
+      "title": "Advisor e-mail: in the portal, the advisor writes or picks a prepared message for one of their customers. The platform sends it with the advisor's name as sender and the advisor's address as reply-to, checks the consent, and logs it in the customer profile. Not a mail link",
+      "source": "A4-journeys-tasks-back-office-annex.md:77",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-018",
+      "type": "C",
+      "area": "A4",
+      "title": "Customer service reads an advisor's current and past statements (A1-C-016) in the commission screen, read only",
+      "source": "A4-journeys-tasks-back-office-annex.md:74",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A4-C-019",
+      "type": "C",
+      "area": "A4",
+      "title": "Journey management for head office: create, edit, pause and end a journey, with a preview and a release step",
+      "source": "A4-journeys-tasks-back-office-annex.md:52",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A4-C-020",
+      "type": "C",
+      "area": "A4",
+      "title": "The head office portal: a web application for Provital's staff, next to the shop and the advisor portal. Staff sign in through the company directory (T3-O-002). Each staff role sees only the screens and data that the staff-role rule set allows (T4-R-023). The audit log records each action …",
+      "source": "A4-journeys-tasks-back-office-annex.md:71",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A4-C-021",
+      "type": "C",
+      "area": "A4",
+      "title": "The admin functions of the head office portal: the pilot switch per advisor (T3-C-001), data-subject requests (T3-C-003), and the staff roles with their assignment",
+      "source": "A4-journeys-tasks-back-office-annex.md:73",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A4-O-001",
+      "type": "O",
+      "area": "A4",
+      "title": "R1 supports single-trigger journeys of three basic types: (1) a date (fixed date, birthday, anniversary); (2) a time relative to an event (days since the last order, days before the next delivery, days after registration); (3) an amount threshold (order value, points, spend in a period). R1 has no …",
+      "source": "A4-journeys-tasks-back-office-annex.md:130",
+      "status": "active"
+    },
+    {
+      "id": "A4-O-002",
+      "type": "O",
+      "area": "A4",
+      "title": "Customer service works per case: tickets in the ticket tool; subscription cases and approvals in the platform; returns in the ERP. Customer, advisor and customer service can each start a return or complaint request (A3-C-012)",
+      "source": "A4-journeys-tasks-back-office-annex.md:131",
+      "status": "active"
+    },
+    {
+      "id": "A4-O-003",
+      "type": "O",
+      "area": "A4",
+      "title": "Provital's current ticket tool, connected by its open API in both directions",
+      "source": "A4-journeys-tasks-back-office-annex.md:132",
+      "status": "active"
+    },
+    {
+      "id": "A4-O-004",
+      "type": "O",
+      "area": "A4",
+      "title": "E-mail and the task list are the channels at R1. WhatsApp and SMS are not in R1 and not in the R1.x list",
+      "source": "A4-journeys-tasks-back-office-annex.md:133",
+      "status": "active"
+    },
+    {
+      "id": "A4-O-005",
+      "type": "O",
+      "area": "A4",
+      "title": "No advisor message through the platform and no \"done\" on the task inside 72 hours counts as \"not reachable\" (A4-C-004)",
+      "source": "A4-journeys-tasks-back-office-annex.md:134",
+      "status": "active"
+    },
+    {
+      "id": "A4-P-001",
+      "type": "P",
+      "area": "A4",
+      "title": "The two lead processes in detail",
+      "source": "A4-journeys-tasks-back-office-annex.md:138",
+      "status": "active"
+    },
+    {
+      "id": "A4-P-002",
+      "type": "P",
+      "area": "A4",
+      "title": "The self-service workshop and its result",
+      "source": "A4-journeys-tasks-back-office-annex.md:139",
+      "status": "active"
+    },
+    {
+      "id": "A4-P-003",
+      "type": "P",
+      "area": "A4",
+      "title": "The e-mail texts per language and the sender identity",
+      "source": "A4-journeys-tasks-back-office-annex.md:140",
+      "status": "active"
+    },
+    {
+      "id": "A4-P-004",
+      "type": "P",
+      "area": "A4",
+      "title": "The access to the company directory for the head office portal, and the staff groups of the roles",
+      "source": "A4-journeys-tasks-back-office-annex.md:141",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-001",
+      "type": "AC",
+      "area": "A5",
+      "title": "An AI text stays inside the fixed page structure and the limit per advisor, and a person releases it before it is public",
+      "source": "A5-digital-advisor-ai-content-annex.md:118",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-002",
+      "type": "AC",
+      "area": "A5",
+      "title": "A text or a photo that matches a check rule produces a hint and a head-office entry, and waits for approval where the rule requires one",
+      "source": "A5-digital-advisor-ai-content-annex.md:119",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-003",
+      "type": "AC",
+      "area": "A5",
+      "title": "An upload produces a desktop and a mobile version at the minimum quality, and the original is kept",
+      "source": "A5-digital-advisor-ai-content-annex.md:120",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-004",
+      "type": "AC",
+      "area": "A5",
+      "title": "The crawler policy lists the open and the blocked paths. A test with an external crawler reaches no page behind a login and no customer or tracking data on the listed paths",
+      "source": "A5-digital-advisor-ai-content-annex.md:121",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-005",
+      "type": "AC",
+      "area": "A5",
+      "title": "Each AI function can be switched off on its own, and the record shows the call, the function and the cost",
+      "source": "A5-digital-advisor-ai-content-annex.md:122",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-006",
+      "type": "AC",
+      "area": "A5",
+      "title": "The chatbot test set contains cases that try to obtain another customer's data. The function meets its pass level on them. A handover reaches the advisor or the contact form (R1.x)",
+      "source": "A5-digital-advisor-ai-content-annex.md:123",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-007",
+      "type": "AC",
+      "area": "A5",
+      "title": "The export for Provital's own AI contains only released data with a consent base, and no personal data of a customer",
+      "source": "A5-digital-advisor-ai-content-annex.md:124",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-008",
+      "type": "AC",
+      "area": "A5",
+      "title": "An accepted regional match creates a lead for the matched advisor and changes no assignment of a customer to an advisor (R1.x)",
+      "source": "A5-digital-advisor-ai-content-annex.md:125",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-009",
+      "type": "AC",
+      "area": "A5",
+      "title": "A text in the content function that matches the health-claim list shows a hint, and a person can still release it",
+      "source": "A5-digital-advisor-ai-content-annex.md:126",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-010",
+      "type": "AC",
+      "area": "A5",
+      "title": "Each advertisement parameter of the rule set opens its section with the matching animals and products",
+      "source": "A5-digital-advisor-ai-content-annex.md:127",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-011",
+      "type": "AC",
+      "area": "A5",
+      "title": "Each AI translation waits for a person's release, and a person can override it (R1.x)",
+      "source": "A5-digital-advisor-ai-content-annex.md:128",
+      "status": "active"
+    },
+    {
+      "id": "A5-AC-012",
+      "type": "AC",
+      "area": "A5",
+      "title": "An advisor publishes only an approved post of the library to a connected channel (R1.x)",
+      "source": "A5-digital-advisor-ai-content-annex.md:129",
+      "status": "active"
+    },
+    {
+      "id": "A5-C-001",
+      "type": "C",
+      "area": "A5",
+      "title": "The advisor text help: a generated draft from the advisor's data and their keywords, inside the fixed structure of the page and the limits per advisor",
+      "source": "A5-digital-advisor-ai-content-annex.md:47",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-002",
+      "type": "C",
+      "area": "A5",
+      "title": "The text check finds an unlawful claim, a missing imprint or a prohibited comparison. It shows a hint to the advisor and creates a moderation entry for head office",
+      "source": "A5-digital-advisor-ai-content-annex.md:48",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-003",
+      "type": "C",
+      "area": "A5",
+      "title": "The photo check finds a photo with a low resolution, recognisable persons, an external logo or a before-and-after claim",
+      "source": "A5-digital-advisor-ai-content-annex.md:49",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-004",
+      "type": "C",
+      "area": "A5",
+      "title": "The health-claim hint in the content function (A5-C-015), as an internal hint for Provital",
+      "source": "A5-digital-advisor-ai-content-annex.md:50",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-005",
+      "type": "C",
+      "area": "A5",
+      "title": "Personalisation at entry: the advertisement parameter decides the section, the animals and the products",
+      "source": "A5-digital-advisor-ai-content-annex.md:51",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-006",
+      "type": "C",
+      "area": "A5",
+      "title": "The AI gateway: one connection to the model provider, with the prompt per function, the record of each call, the cost limit and the off switch per function",
+      "source": "A5-digital-advisor-ai-content-annex.md:52",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-007",
+      "type": "C",
+      "area": "A5",
+      "title": "The AI-readable site and the crawler policy: public pages readable by an external agent, deeper access blocked",
+      "source": "A5-digital-advisor-ai-content-annex.md:53",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A5-C-008",
+      "type": "C",
+      "area": "A5",
+      "title": "The customer chatbot: it guides to a product or to the advisor, with the advisor's reachable hours and channels",
+      "source": "A5-digital-advisor-ai-content-annex.md:63",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-009",
+      "type": "C",
+      "area": "A5",
+      "title": "The internal chatbot for an advisor: business and service questions, and a handover to the contact form, an e-mail or the ticket tool",
+      "source": "A5-digital-advisor-ai-content-annex.md:64",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-010",
+      "type": "C",
+      "area": "A5",
+      "title": "Order help: order status, tracking and the return request after a login, with an identity check on the general site",
+      "source": "A5-digital-advisor-ai-content-annex.md:67",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-011",
+      "type": "C",
+      "area": "A5",
+      "title": "Recommendations after a login, from the customer's animals and their last orders",
+      "source": "A5-digital-advisor-ai-content-annex.md:68",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-012",
+      "type": "C",
+      "area": "A5",
+      "title": "AI translation into the languages that the platform runs (R1: German and English), with a human override. A further language follows after R1 through change control (T3-D-014); DR lists the difference",
+      "source": "A5-digital-advisor-ai-content-annex.md:69",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-013",
+      "type": "C",
+      "area": "A5",
+      "title": "The social media post library: an advisor publishes an approved picture, video or text to a connected channel (Instagram, Facebook, Pinterest, TikTok)",
+      "source": "A5-digital-advisor-ai-content-annex.md:70",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-014",
+      "type": "C",
+      "area": "A5",
+      "title": "The advisory agent on a content base, with the content owner and the source list",
+      "source": "A5-digital-advisor-ai-content-annex.md:71",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-015",
+      "type": "C",
+      "area": "A5",
+      "title": "The content function: a draft and a released version, a language per market and a preview, for these page types: a general landing page, a product-focused page, category pages, product pages, content pages with text, image and video blocks, and a page with frequent questions",
+      "source": "A5-digital-advisor-ai-content-annex.md:77",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A5-C-016",
+      "type": "C",
+      "area": "A5",
+      "title": "The media pipeline: one upload produces a desktop and a mobile version at a minimum quality; the platform stores the variants and the original",
+      "source": "A5-digital-advisor-ai-content-annex.md:78",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A5-C-017",
+      "type": "C",
+      "area": "A5",
+      "title": "The advisor's social links and contact data on the page, each item set public or private",
+      "source": "A5-digital-advisor-ai-content-annex.md:79",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A5-C-018",
+      "type": "C",
+      "area": "A5",
+      "title": "The data export for Provital's own AI: the released, anonymous data set with its consent base, in a documented format",
+      "source": "A5-digital-advisor-ai-content-annex.md:80",
+      "status": "active",
+      "release": "R1, if A5-P-001 holds"
+    },
+    {
+      "id": "A5-C-019",
+      "type": "C",
+      "area": "A5",
+      "title": "Purchase help on Provital's own site, when the visitor wants no advisor",
+      "source": "A5-digital-advisor-ai-content-annex.md:65",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-C-020",
+      "type": "C",
+      "area": "A5",
+      "title": "The regional advisor match: a guiding question offers a matching advisor in the visitor's region; an accepted match creates a lead for that advisor (A4)",
+      "source": "A5-digital-advisor-ai-content-annex.md:66",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A5-O-001",
+      "type": "O",
+      "area": "A5",
+      "title": "The AI release split of section 4",
+      "source": "A5-digital-advisor-ai-content-annex.md:135",
+      "status": "active"
+    },
+    {
+      "id": "A5-O-002",
+      "type": "O",
+      "area": "A5",
+      "title": "The legal basis of each AI function",
+      "source": "A5-digital-advisor-ai-content-annex.md:136",
+      "status": "active"
+    },
+    {
+      "id": "A5-O-003",
+      "type": "O",
+      "area": "A5",
+      "title": "All AI functions use the gateway. The processing agreement forbids training on platform data. The provider runs in the European Union or at a location that Provital approves. Provital approves the provider before its first use",
+      "source": "A5-digital-advisor-ai-content-annex.md:137",
+      "status": "active"
+    },
+    {
+      "id": "A5-O-004",
+      "type": "O",
+      "area": "A5",
+      "title": "The advisory content at R1 is the calculator logic and Provital's product and care texts. The advisory agent follows in R1.x",
+      "source": "A5-digital-advisor-ai-content-annex.md:138",
+      "status": "active"
+    },
+    {
+      "id": "A5-O-005",
+      "type": "O",
+      "area": "A5",
+      "title": "After a violation, customer service approves each photo of that advisor before it goes live; text changes of that advisor also wait for approval. Both end when the check rules release the advisor",
+      "source": "A5-digital-advisor-ai-content-annex.md:139",
+      "status": "active"
+    },
+    {
+      "id": "A5-P-001",
+      "type": "P",
+      "area": "A5",
+      "title": "Assumption: legal counsel confirms that anonymous customer and advisor data may serve Provital's own AI",
+      "source": "A5-digital-advisor-ai-content-annex.md:143",
+      "status": "active"
+    },
+    {
+      "id": "A5-P-002",
+      "type": "P",
+      "area": "A5",
+      "title": "The owner of the chatbot answers and the chatbot rule set (section 5)",
+      "source": "A5-digital-advisor-ai-content-annex.md:144",
+      "status": "active"
+    },
+    {
+      "id": "A6-AC-001",
+      "type": "AC",
+      "area": "A6",
+      "title": "A change of a token changes every screen that uses it, without a code change",
+      "source": "A6-design-annex.md:78",
+      "status": "active"
+    },
+    {
+      "id": "A6-AC-002",
+      "type": "AC",
+      "area": "A6",
+      "title": "Each screen of the inventory exists in the mobile and the desktop layout, at the defined breakpoints",
+      "source": "A6-design-annex.md:79",
+      "status": "active"
+    },
+    {
+      "id": "A6-AC-003",
+      "type": "AC",
+      "area": "A6",
+      "title": "The accessibility test of A6-O-003 runs on the areas of the target, shows no open item of level A, and its report lists each other open item with a plan",
+      "source": "A6-design-annex.md:80",
+      "status": "active"
+    },
+    {
+      "id": "A6-AC-004",
+      "type": "AC",
+      "area": "A6",
+      "title": "The handover file documents the tokens, the components and the rules, so that a later agency can design a component in the same style",
+      "source": "A6-design-annex.md:81",
+      "status": "active"
+    },
+    {
+      "id": "A6-AC-005",
+      "type": "AC",
+      "area": "A6",
+      "title": "The final colours, typeface and logo are applied through the tokens, without a change to any screen layout",
+      "source": "A6-design-annex.md:82",
+      "status": "active"
+    },
+    {
+      "id": "A6-C-001",
+      "type": "C",
+      "area": "A6",
+      "title": "The design tokens on the relaunch branding: colour, type, spacing, radius, shadow, the logo and the claim, with a light and a high-contrast variant",
+      "source": "A6-design-annex.md:44",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A6-C-002",
+      "type": "C",
+      "area": "A6",
+      "title": "The component library: navigation, product card, price and points, add to cart, form fields, validation messages, modal, table, the account navigation, the portal widgets",
+      "source": "A6-design-annex.md:45",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A6-C-003",
+      "type": "C",
+      "area": "A6",
+      "title": "The screen inventory: the entry pages, the category and product page, the cart, the checkout, the confirmation, the account, the subscription, the return, the advisor page, the portal dashboard, the to-do list, the figures and the screens of the head office portal",
+      "source": "A6-design-annex.md:46",
+      "status": "active",
+      "release": "RC: pilot screens; others: R1"
+    },
+    {
+      "id": "A6-C-004",
+      "type": "C",
+      "area": "A6",
+      "title": "The responsive rules: the mobile breakpoints, the touch targets, the table behaviour on a small screen, the image formats per breakpoint",
+      "source": "A6-design-annex.md:47",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A6-C-005",
+      "type": "C",
+      "area": "A6",
+      "title": "The accessibility baseline: contrast, focus, labels, keyboard order, the statement page",
+      "source": "A6-design-annex.md:48",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "A6-C-006",
+      "type": "C",
+      "area": "A6",
+      "title": "The design handover: the documented tokens, the components and the rules, and the review file per screen",
+      "source": "A6-design-annex.md:49",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "A6-C-007",
+      "type": "C",
+      "area": "A6",
+      "title": "The shell of the installable web app (PWA) and the design of push notifications",
+      "source": "A6-design-annex.md:50",
+      "status": "active",
+      "release": "R1.x"
+    },
+    {
+      "id": "A6-O-001",
+      "type": "O",
+      "area": "A6",
+      "title": "The design system starts on the work-in-progress brand book. The final values replace the tokens",
+      "source": "A6-design-annex.md:90",
+      "status": "active"
+    },
+    {
+      "id": "A6-O-002",
+      "type": "O",
+      "area": "A6",
+      "title": "One approver, named by Provital, and one review each week",
+      "source": "A6-design-annex.md:91",
+      "status": "active"
+    },
+    {
+      "id": "A6-O-003",
+      "type": "O",
+      "area": "A6",
+      "title": "The accessibility target is WCAG 2.2 AA for the shop, the account, the checkout and the advisor portal, with a statement page and a named contact. Test: an automated check on every screen of these areas and a manual test of the key flows. The test report lists each open item with a plan. Head …",
+      "source": "A6-design-annex.md:92",
+      "status": "active"
+    },
+    {
+      "id": "A6-P-001",
+      "type": "P",
+      "area": "A6",
+      "title": "Two or three reference websites per area",
+      "source": "A6-design-annex.md:96",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-001",
+      "type": "AC",
+      "area": "A7",
+      "title": "Each pilot order reaches NAV once, with the right advisor and the right payment, or waits in the clarification queue with its reason",
+      "source": "A7-cutover-launch-legacy-annex.md:111",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-002",
+      "type": "AC",
+      "area": "A7",
+      "title": "The cutover runs inside the window; every runbook step has an owner and a result",
+      "source": "A7-cutover-launch-legacy-annex.md:112",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-003",
+      "type": "AC",
+      "area": "A7",
+      "title": "The activity log of the rehearsal lists every order, account, consent and subscription change and exports in a documented format",
+      "source": "A7-cutover-launch-legacy-annex.md:113",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-004",
+      "type": "AC",
+      "area": "A7",
+      "title": "Every smoke test passes before the announcement. One test order of each type is placed and booked in NAV. The first real subscription delivery is checked when it ships",
+      "source": "A7-cutover-launch-legacy-annex.md:114",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-005",
+      "type": "AC",
+      "area": "A7",
+      "title": "The archive export loads at Provital's hoster and answers a test read request before the cutover",
+      "source": "A7-cutover-launch-legacy-annex.md:115",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-006",
+      "type": "AC",
+      "area": "A7",
+      "title": "At the end of the hypercare, every open defect and every reconciliation difference has an owner and a date",
+      "source": "A7-cutover-launch-legacy-annex.md:116",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-007",
+      "type": "AC",
+      "area": "A7",
+      "title": "The rehearsal completes before RC with an approved reconciliation report",
+      "source": "A7-cutover-launch-legacy-annex.md:117",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-008",
+      "type": "AC",
+      "area": "A7",
+      "title": "A pilot advisor who is switched back can order in the current shop. Every order that the platform placed is in NAV. The daily list shows their consent changes",
+      "source": "A7-cutover-launch-legacy-annex.md:118",
+      "status": "active"
+    },
+    {
+      "id": "A7-AC-009",
+      "type": "AC",
+      "area": "A7",
+      "title": "Pilot advisors have the recorded training and the guide before RC; all advisors before R1",
+      "source": "A7-cutover-launch-legacy-annex.md:119",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-001",
+      "type": "D",
+      "area": "A7",
+      "title": "The release plan of DR section 2",
+      "source": "A7-cutover-launch-legacy-annex.md:29",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-002",
+      "type": "D",
+      "area": "A7",
+      "title": "A full rehearsal runs before RC on a production-like copy, with an operator that Provital names: migration, interface switch-on, reconciliation report. The cutover is its second run. After an unexplained difference, the rehearsal runs again",
+      "source": "A7-cutover-launch-legacy-annex.md:30",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-003",
+      "type": "D",
+      "area": "A7",
+      "title": "From RC one pilot group uses the platform on production: one field group, or the advisors below one leader, at most 10 advisors. Provital names it and the roll-out steps before the rehearsal. Each pilot advisor is switched in the head office portal. A subset run migrates the data of the pilot …",
+      "source": "A7-cutover-launch-legacy-annex.md:31",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-004",
+      "type": "D",
+      "area": "A7",
+      "title": "In pilot mode, NAV stays the master and calculates commission. Subscriptions stay in the current shop until the cutover; pilot customers place one-off orders in the platform",
+      "source": "A7-cutover-launch-legacy-annex.md:32",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-005",
+      "type": "D",
+      "area": "A7",
+      "title": "If pilot mode shows a problem, Provital switches pilot advisors back to the current shop. NAV holds every order that the platform placed. The accounts stay in the platform. Customer service applies their consent changes in the current shop by hand, from a daily list that the platform produces. …",
+      "source": "A7-cutover-launch-legacy-annex.md:33",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-006",
+      "type": "D",
+      "area": "A7",
+      "title": "The cutover runs in one night, 00:00 to 05:00 German time: the shop first, the advisor area second. No weekend. The planned night is Wednesday 31 March to Thursday 1 April 2027",
+      "source": "A7-cutover-launch-legacy-annex.md:34",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-007",
+      "type": "D",
+      "area": "A7",
+      "title": "Until the runbook approval, Provital may move the cutover to an earlier weeknight. After a no-go, the cutover moves to the next weeknight that Provital names. The training and communication dates move with the night",
+      "source": "A7-cutover-launch-legacy-annex.md:35",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-008",
+      "type": "D",
+      "area": "A7",
+      "title": "The go or no-go decision uses the criteria of section 5.2 and named people. Provital names the approvers of the migrated data",
+      "source": "A7-cutover-launch-legacy-annex.md:36",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-009",
+      "type": "D",
+      "area": "A7",
+      "title": "The current shop database becomes a read-only archive for orders and customer data at Provital's hoster for one year. Only what the platform needs is migrated",
+      "source": "A7-cutover-launch-legacy-annex.md:37",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-010",
+      "type": "D",
+      "area": "A7",
+      "title": "One-time vouchers end at the cutover. Long-term vouchers are rebuilt in the ERP under a new rule: a voucher is no longer valid without end, but for a period of three to six months from its creation. Provital sets the period (a setting)",
+      "source": "A7-cutover-launch-legacy-annex.md:38",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-011",
+      "type": "D",
+      "area": "A7",
+      "title": "Hypercare after R1 (section 7): daily checks and a short report; suggested length four weeks. At its end, every open defect and reconciliation difference has an owner and a date. The contract sets who staffs it",
+      "source": "A7-cutover-launch-legacy-annex.md:39",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-012",
+      "type": "D",
+      "area": "A7",
+      "title": "Provital moves the warehouse functions to the ERP or to its logistics provider. Until then they run on the current installation, operated by Provital. Wherever they run, they receive their orders from NAV. 57Blocks does not rebuild them and builds no interface to them",
+      "source": "A7-cutover-launch-legacy-annex.md:40",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-013",
+      "type": "D",
+      "area": "A7",
+      "title": "Virtual advisor stock is not in the platform (A3-O-001)",
+      "source": "A7-cutover-launch-legacy-annex.md:41",
+      "status": "active"
+    },
+    {
+      "id": "A7-D-014",
+      "type": "D",
+      "area": "A7",
+      "title": "Recorded training and a written guide for every advisor and for head office: pilot advisors one week before RC, all others two weeks before R1. Provital lists the live sessions that it wants; the contract sets them. Provital records who attended",
+      "source": "A7-cutover-launch-legacy-annex.md:42",
+      "status": "active"
+    },
+    {
+      "id": "A7-P-001",
+      "type": "P",
+      "area": "A7",
+      "title": "Assumption: the people who run the current shop support the content freeze and the cutover. 57Blocks documents the jobs and interfaces that the cutover touches (section 6)",
+      "source": "A7-cutover-launch-legacy-annex.md:125",
+      "status": "active"
+    },
+    {
+      "id": "A7-P-002",
+      "type": "P",
+      "area": "A7",
+      "title": "Approval of the runbook and the criteria that 57Blocks proposes",
+      "source": "A7-cutover-launch-legacy-annex.md:126",
+      "status": "active"
+    },
+    {
+      "id": "A7-P-003",
+      "type": "P",
+      "area": "A7",
+      "title": "Assumption: the archive export is pseudonymised where the law requires it",
+      "source": "A7-cutover-launch-legacy-annex.md:127",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-001",
+      "type": "AC",
+      "area": "T1",
+      "title": "Each load matches the source in count and total, after the records that the validation file reports, and a named sample matches record by record. Provital corrects a reported record in the source or approves its exclusion",
+      "source": "T1-data-ownership-migration-annex.md:114",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-002",
+      "type": "AC",
+      "area": "T1",
+      "title": "A customer logs in after the migration, sets a new password and sees their pets, consents and subscriptions. A pilot customer sees their subscriptions in the platform only after the cutover",
+      "source": "T1-data-ownership-migration-annex.md:115",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-003",
+      "type": "AC",
+      "area": "T1",
+      "title": "The simulated subscription run on the migrated data produces every due delivery exactly once",
+      "source": "T1-data-ownership-migration-annex.md:116",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-004",
+      "type": "AC",
+      "area": "T1",
+      "title": "No duplicate is merged automatically. A reported duplicate is decided by customer service",
+      "source": "T1-data-ownership-migration-annex.md:117",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-005",
+      "type": "AC",
+      "area": "T1",
+      "title": "No marketing e-mail and no marketing message goes to a customer whose consent is missing or not classified. Transactional messages are not affected",
+      "source": "T1-data-ownership-migration-annex.md:118",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-006",
+      "type": "AC",
+      "area": "T1",
+      "title": "The customer account reads three years of history from the ERP on demand, and the read fails visibly when the ERP does not answer",
+      "source": "T1-data-ownership-migration-annex.md:119",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-007",
+      "type": "AC",
+      "area": "T1",
+      "title": "The data feed reproduces the platform's own report figures for the same period",
+      "source": "T1-data-ownership-migration-annex.md:120",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-008",
+      "type": "AC",
+      "area": "T1",
+      "title": "The rehearsal before RC runs the whole runbook without an unexplained difference. The subset run migrates every named pilot advisor and their customers, and the cutover loads no account, consent, pet profile or page setting of a pilot person a second time",
+      "source": "T1-data-ownership-migration-annex.md:121",
+      "status": "active"
+    },
+    {
+      "id": "T1-AC-009",
+      "type": "AC",
+      "area": "T1",
+      "title": "For a switched-back pilot advisor, the platform produces a daily list of the customers' consent changes",
+      "source": "T1-data-ownership-migration-annex.md:122",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-001",
+      "type": "O",
+      "area": "T1",
+      "title": "The customer account shows three years of transaction history, read from the ERP on demand. The ERP keeps at least five years active. Past orders, invoices, payments and returns (the transaction history) are not migrated into the platform. Active subscriptions and two years of commission history …",
+      "source": "T1-data-ownership-migration-annex.md:128",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-002",
+      "type": "O",
+      "area": "T1",
+      "title": "Every customer sets a new password at the first login. A set-password e-mail goes to each migrated customer. Provital's customer service plans for more contacts in the first week after the cutover",
+      "source": "T1-data-ownership-migration-annex.md:129",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-003",
+      "type": "O",
+      "area": "T1",
+      "title": "Legal counsel and the data protection officer classify the migrated consent flags. A consent that cannot be classified is not used, and the customer is asked again",
+      "source": "T1-data-ownership-migration-annex.md:130",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-004",
+      "type": "O",
+      "area": "T1",
+      "title": "No card data is migrated. Existing PayPal billing agreements are reused with Provital's current business account; their IDs and charge history are migrated (A2-P-001)",
+      "source": "T1-data-ownership-migration-annex.md:131",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-005",
+      "type": "O",
+      "area": "T1",
+      "title": "The volumes of section 3 are planning figures",
+      "source": "T1-data-ownership-migration-annex.md:132",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-006",
+      "type": "O",
+      "area": "T1",
+      "title": "An operator that Provital names runs the steps on production personal data (rehearsal, subset run, final migration run, last delta, cutover reconciliation) with 57Blocks' scripts and runbook. 57Blocks reviews the reports without personal data",
+      "source": "T1-data-ownership-migration-annex.md:133",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-007",
+      "type": "O",
+      "area": "T1",
+      "title": "The ERP keeps the direct-debit mandates; the platform keeps the mandate reference of a subscription",
+      "source": "T1-data-ownership-migration-annex.md:134",
+      "status": "active"
+    },
+    {
+      "id": "T1-O-008",
+      "type": "O",
+      "area": "T1",
+      "title": "TSO-DATA moves the ERP data into Business Central. TSO-DATA confirms this in the Business Central workshop",
+      "source": "T1-data-ownership-migration-annex.md:135",
+      "status": "active"
+    },
+    {
+      "id": "T1-P-001",
+      "type": "P",
+      "area": "T1",
+      "title": "The NAV exports, the table list and the schema",
+      "source": "T1-data-ownership-migration-annex.md:139",
+      "status": "active"
+    },
+    {
+      "id": "T1-P-002",
+      "type": "P",
+      "area": "T1",
+      "title": "The active subscription export with the payment reference",
+      "source": "T1-data-ownership-migration-annex.md:140",
+      "status": "active"
+    },
+    {
+      "id": "T1-P-003",
+      "type": "P",
+      "area": "T1",
+      "title": "The list of the current shop's pet and profile data",
+      "source": "T1-data-ownership-migration-annex.md:141",
+      "status": "active"
+    },
+    {
+      "id": "T1-P-004",
+      "type": "P",
+      "area": "T1",
+      "title": "The pseudonymised per-advisor export of NAV's commission results",
+      "source": "T1-data-ownership-migration-annex.md:142",
+      "status": "active"
+    },
+    {
+      "id": "T1-P-005",
+      "type": "P",
+      "area": "T1",
+      "title": "The pilot group and its roll-out steps (A7-D-003), and the production-like copy for the rehearsal",
+      "source": "T1-data-ownership-migration-annex.md:143",
+      "status": "active"
+    },
+    {
+      "id": "T1-P-006",
+      "type": "P",
+      "area": "T1",
+      "title": "The export of the advisor structure history (sponsor changes with dates), and how far back it goes",
+      "source": "T1-data-ownership-migration-annex.md:144",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-001",
+      "type": "AC",
+      "area": "T2",
+      "title": "Each interface has an approved contract (fields, keys, value lists, error codes, retry rule) before its build. Provital's NAV developer approves a NAV contract; TSO-DATA approves a Business Central contract. A contract that is not approved is a late input (DR section 8)",
+      "source": "T2-integration-annex.md:136",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-002",
+      "type": "AC",
+      "area": "T2",
+      "title": "A repeated send with the same business key creates no second order, customer request or payment request in the ERP or on the platform (T2-O-002)",
+      "source": "T2-integration-annex.md:137",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-003",
+      "type": "AC",
+      "area": "T2",
+      "title": "The daily reconciliation shows no unexplained difference for each flow in the contract test",
+      "source": "T2-integration-annex.md:138",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-004",
+      "type": "AC",
+      "area": "T2",
+      "title": "The shop sells during an ERP outage, and the orders arrive once after it",
+      "source": "T2-integration-annex.md:139",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-005",
+      "type": "AC",
+      "area": "T2",
+      "title": "A stale copy behaves as section 5 says",
+      "source": "T2-integration-annex.md:140",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-006",
+      "type": "AC",
+      "area": "T2",
+      "title": "The contract test runs on the NAV test environment before the interface is accepted",
+      "source": "T2-integration-annex.md:141",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-007",
+      "type": "AC",
+      "area": "T2",
+      "title": "Each message is logged as T2-D-008 says, with key, status and direction",
+      "source": "T2-integration-annex.md:142",
+      "status": "active"
+    },
+    {
+      "id": "T2-AC-008",
+      "type": "AC",
+      "area": "T2",
+      "title": "Every pilot order reaches production NAV once, and no order number collides with the current shop's",
+      "source": "T2-integration-annex.md:143",
+      "status": "active"
+    },
+    {
+      "id": "T2-C-001",
+      "type": "C",
+      "area": "T2",
+      "title": "Order hand-off",
+      "source": "T2-integration-annex.md:65",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-002",
+      "type": "C",
+      "area": "T2",
+      "title": "Subscription delivery",
+      "source": "T2-integration-annex.md:66",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-003",
+      "type": "C",
+      "area": "T2",
+      "title": "Customer change request",
+      "source": "T2-integration-annex.md:67",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-004",
+      "type": "C",
+      "area": "T2",
+      "title": "Advisor registration",
+      "source": "T2-integration-annex.md:68",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-005",
+      "type": "C",
+      "area": "T2",
+      "title": "Payment result",
+      "source": "T2-integration-annex.md:69",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-006",
+      "type": "C",
+      "area": "T2",
+      "title": "Withdrawal",
+      "source": "T2-integration-annex.md:70",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-007",
+      "type": "C",
+      "area": "T2",
+      "title": "Commission result",
+      "source": "T2-integration-annex.md:71",
+      "status": "active",
+      "release": "R1; R2 if the commission switch waits (T2-P-003)"
+    },
+    {
+      "id": "T2-C-008",
+      "type": "C",
+      "area": "T2",
+      "title": "Return or complaint request",
+      "source": "T2-integration-annex.md:72",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-009",
+      "type": "C",
+      "area": "T2",
+      "title": "Protection period",
+      "source": "T2-integration-annex.md:73",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-010",
+      "type": "C",
+      "area": "T2",
+      "title": "Customer and advisor master data",
+      "source": "T2-integration-annex.md:79",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-011",
+      "type": "C",
+      "area": "T2",
+      "title": "Assignment",
+      "source": "T2-integration-annex.md:80",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-012",
+      "type": "C",
+      "area": "T2",
+      "title": "Advisor structure and its history",
+      "source": "T2-integration-annex.md:81",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-013",
+      "type": "C",
+      "area": "T2",
+      "title": "Prices and campaigns",
+      "source": "T2-integration-annex.md:82",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-014",
+      "type": "C",
+      "area": "T2",
+      "title": "Vouchers and marks",
+      "source": "T2-integration-annex.md:83",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-015",
+      "type": "C",
+      "area": "T2",
+      "title": "Shipping fees",
+      "source": "T2-integration-annex.md:84",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-016",
+      "type": "C",
+      "area": "T2",
+      "title": "Articles and stock",
+      "source": "T2-integration-annex.md:85",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-017",
+      "type": "C",
+      "area": "T2",
+      "title": "Point corrections",
+      "source": "T2-integration-annex.md:86",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-018",
+      "type": "C",
+      "area": "T2",
+      "title": "Allowed payment options",
+      "source": "T2-integration-annex.md:87",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-019",
+      "type": "C",
+      "area": "T2",
+      "title": "Order, invoice and payment status",
+      "source": "T2-integration-annex.md:88",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-020",
+      "type": "C",
+      "area": "T2",
+      "title": "NAV's commission result",
+      "source": "T2-integration-annex.md:89",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-021",
+      "type": "C",
+      "area": "T2",
+      "title": "Shipment report",
+      "source": "T2-integration-annex.md:90",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-022",
+      "type": "C",
+      "area": "T2",
+      "title": "Advisor approval or exit",
+      "source": "T2-integration-annex.md:91",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-023",
+      "type": "C",
+      "area": "T2",
+      "title": "Refund request",
+      "source": "T2-integration-annex.md:92",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-024",
+      "type": "C",
+      "area": "T2",
+      "title": "Order history",
+      "source": "T2-integration-annex.md:93",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-030",
+      "type": "C",
+      "area": "T2",
+      "title": "Payment provider",
+      "source": "T2-integration-annex.md:99",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-031",
+      "type": "C",
+      "area": "T2",
+      "title": "E-mail marketing",
+      "source": "T2-integration-annex.md:100",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-032",
+      "type": "C",
+      "area": "T2",
+      "title": "Ticket tool",
+      "source": "T2-integration-annex.md:101",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-033",
+      "type": "C",
+      "area": "T2",
+      "title": "AI provider",
+      "source": "T2-integration-annex.md:102",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-034",
+      "type": "C",
+      "area": "T2",
+      "title": "Address validation",
+      "source": "T2-integration-annex.md:103",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-035",
+      "type": "C",
+      "area": "T2",
+      "title": "Carrier return service",
+      "source": "T2-integration-annex.md:104",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-C-036",
+      "type": "C",
+      "area": "T2",
+      "title": "E-mail delivery service",
+      "source": "T2-integration-annex.md:105",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T2-C-037",
+      "type": "C",
+      "area": "T2",
+      "title": "Web analytics",
+      "source": "T2-integration-annex.md:106",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T2-D-001",
+      "type": "D",
+      "area": "T2",
+      "title": "One interface design for both ERPs. The approved payload contracts (T2-AC-001) define the data set; NAV receives the part it can use. The plan assumes that Business Central takes over these contracts, and that 57Blocks adds a Business Central adapter at R2 (T3-D-005). Basis: Proposed by Provital",
+      "source": "T2-integration-annex.md:22",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-002",
+      "type": "D",
+      "area": "T2",
+      "title": "The platform never reads or writes the ERP database directly; it uses web services and exports. Basis: Agreed. The order hand-off starts on NAV's file import: Proposed by Provital",
+      "source": "T2-integration-annex.md:23",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-003",
+      "type": "D",
+      "area": "T2",
+      "title": "Existing ERP functions first; an ERP change only where none fits",
+      "source": "T2-integration-annex.md:24",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-004",
+      "type": "D",
+      "area": "T2",
+      "title": "Every flow is scheduled or triggered",
+      "source": "T2-integration-annex.md:25",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-005",
+      "type": "D",
+      "area": "T2",
+      "title": "Each outbound message is stored at least until the ERP confirms it (retention after the confirmation: T4-R-036)",
+      "source": "T2-integration-annex.md:26",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-006",
+      "type": "D",
+      "area": "T2",
+      "title": "Each outbound message carries a business key, so nothing is booked twice",
+      "source": "T2-integration-annex.md:27",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-007",
+      "type": "D",
+      "area": "T2",
+      "title": "Each flow is reconciled daily by count and total, and each copy against its master",
+      "source": "T2-integration-annex.md:28",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-008",
+      "type": "D",
+      "area": "T2",
+      "title": "One authenticated, encrypted connection. Every message is logged with personal data masked",
+      "source": "T2-integration-annex.md:29",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-009",
+      "type": "D",
+      "area": "T2",
+      "title": "A basket line reads a copy that records its source and age",
+      "source": "T2-integration-annex.md:30",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-010",
+      "type": "D",
+      "area": "T2",
+      "title": "An order states the price, campaign and voucher versions used; the ERP books them (DP1)",
+      "source": "T2-integration-annex.md:31",
+      "status": "active"
+    },
+    {
+      "id": "T2-D-011",
+      "type": "D",
+      "area": "T2",
+      "title": "Pilot mode (RC to the cutover). Pilot orders go to production NAV through the hand-off (T2-C-001). Subscription deliveries start at the cutover. Basis: 57Blocks proposal",
+      "source": "T2-integration-annex.md:32",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-001",
+      "type": "O",
+      "area": "T2",
+      "title": "NAV delivers each read by a web service or a scheduled export",
+      "source": "T2-integration-annex.md:149",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-002",
+      "type": "O",
+      "area": "T2",
+      "title": "Platform order numbers cannot collide with the current shop's. A pre-check (N-8) runs before a resend, because NAV replaces an order with the same number",
+      "source": "T2-integration-annex.md:150",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-003",
+      "type": "O",
+      "area": "T2",
+      "title": "The order status read is the acceptance signal; the outbox keeps the order until it appears",
+      "source": "T2-integration-annex.md:151",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-004",
+      "type": "O",
+      "area": "T2",
+      "title": "Business Central with KatarGo covers each ERP-led domain through its interfaces. TSO-DATA confirms this in the Business Central workshop",
+      "source": "T2-integration-annex.md:152",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-005",
+      "type": "O",
+      "area": "T2",
+      "title": "The platform fills its Business Central copies (T3-D-007) from a scheduled export of Business Central. Decided before the R2 build",
+      "source": "T2-integration-annex.md:153",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-006",
+      "type": "O",
+      "area": "T2",
+      "title": "NAV delivers a stock figure the shop can sell from; the platform reserves no stock",
+      "source": "T2-integration-annex.md:154",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-007",
+      "type": "O",
+      "area": "T2",
+      "title": "NAV records a change date per customer and advisor record",
+      "source": "T2-integration-annex.md:155",
+      "status": "active"
+    },
+    {
+      "id": "T2-O-008",
+      "type": "O",
+      "area": "T2",
+      "title": "Head office approves campaigns in the ERP; the export carries the approval",
+      "source": "T2-integration-annex.md:156",
+      "status": "active"
+    },
+    {
+      "id": "T2-P-001",
+      "type": "P",
+      "area": "T2",
+      "title": "The NAV test environment (a NAV copy with all personal data masked by a script; approach: Agreed), and the network access to it: addresses, import location, rights",
+      "source": "T2-integration-annex.md:160",
+      "status": "active"
+    },
+    {
+      "id": "T2-P-002",
+      "type": "P",
+      "area": "T2",
+      "title": "The NAV tables and schema",
+      "source": "T2-integration-annex.md:161",
+      "status": "active"
+    },
+    {
+      "id": "T2-P-003",
+      "type": "P",
+      "area": "T2",
+      "title": "The confirmed NAV changes (section 3), with capacity and dates",
+      "source": "T2-integration-annex.md:162",
+      "status": "active"
+    },
+    {
+      "id": "T2-P-004",
+      "type": "P",
+      "area": "T2",
+      "title": "The sending domain with its SPF, DKIM and DMARC records",
+      "source": "T2-integration-annex.md:163",
+      "status": "active"
+    },
+    {
+      "id": "T3-AC-001",
+      "type": "AC",
+      "area": "T3",
+      "title": "No module reaches an ERP table or an ERP database directly. Every exchange goes through the integration module",
+      "source": "T3-architecture-domain-model-annex.md:119",
+      "status": "active"
+    },
+    {
+      "id": "T3-AC-002",
+      "type": "AC",
+      "area": "T3",
+      "title": "The platform runs on a clean environment with one command, and the deployment keeps the shop available",
+      "source": "T3-architecture-domain-model-annex.md:120",
+      "status": "active"
+    },
+    {
+      "id": "T3-AC-003",
+      "type": "AC",
+      "area": "T3",
+      "title": "A person has exactly one record and at most one ERP customer number, linked when the ERP creates it, and the roles carry their dates",
+      "source": "T3-architecture-domain-model-annex.md:121",
+      "status": "active"
+    },
+    {
+      "id": "T3-AC-004",
+      "type": "AC",
+      "area": "T3",
+      "title": "A consent record shows its type, its text version, its date, its source and its withdrawal",
+      "source": "T3-architecture-domain-model-annex.md:122",
+      "status": "active"
+    },
+    {
+      "id": "T3-AC-005",
+      "type": "AC",
+      "area": "T3",
+      "title": "The application uses no managed service that only one cloud provider offers (database, queue, object store and container runtime follow open standards). The external services of T2 section 4.3 are outside this criterion",
+      "source": "T3-architecture-domain-model-annex.md:123",
+      "status": "active"
+    },
+    {
+      "id": "T3-AC-006",
+      "type": "AC",
+      "area": "T3",
+      "title": "The AI gateway records each call with its function, its model, its cost and its result, and each function can be switched off alone",
+      "source": "T3-architecture-domain-model-annex.md:124",
+      "status": "active"
+    },
+    {
+      "id": "T3-C-001",
+      "type": "C",
+      "area": "T3",
+      "title": "Pilot switch. Head office switches pilot mode on or off per advisor in the head office portal. A pilot advisor and their customers use the platform: the advisor's path, the portal, the account and the checkout. All other advisors and their customers keep using the current shop. Each switch is …",
+      "source": "T3-architecture-domain-model-annex.md:48",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T3-C-002",
+      "type": "C",
+      "area": "T3",
+      "title": "Sending path of the advisor's e-mails. The advisor writes or picks a prepared message in the portal and sends it to one of their customers (A4). The platform sends it through its e-mail delivery service (T2-C-036) from one Provital sending domain for every advisor (T2-P-004), with the advisor's …",
+      "source": "T3-architecture-domain-model-annex.md:49",
+      "status": "active",
+      "release": "R1"
+    },
+    {
+      "id": "T3-C-003",
+      "type": "C",
+      "area": "T3",
+      "title": "Data-subject requests. On a person's request, head office deletes or exports the person's platform data in the head office portal. Data under a legal retention is blocked instead of deleted (T3-O-005). The ERP handles its own data. The platform deletes its copy of the person's ERP data and marks …",
+      "source": "T3-architecture-domain-model-annex.md:50",
+      "status": "active",
+      "release": "RC"
+    },
+    {
+      "id": "T3-C-004",
+      "type": "C",
+      "area": "T3",
+      "title": "Page variants. The shop pages are built so that page variants can run later. The A/B test function itself is R1.x",
+      "source": "T3-architecture-domain-model-annex.md:51",
+      "status": "active",
+      "release": "R1 (readiness)"
+    },
+    {
+      "id": "T3-D-001",
+      "type": "D",
+      "area": "T3",
+      "title": "A modular monolith, deployed as one application with one worker process (built from the same code base), with clear module boundaries: commerce, subscription, commission, journey, content, identity, integration",
+      "source": "T3-architecture-domain-model-annex.md:29",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-002",
+      "type": "D",
+      "area": "T3",
+      "title": "The commerce core is built in house on a TypeScript stack with a server-side rendering front end, in one repository with the shared packages",
+      "source": "T3-architecture-domain-model-annex.md:30",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-003",
+      "type": "D",
+      "area": "T3",
+      "title": "Background work runs in a worker, not in the request: the due-delivery run, the commission run, the journey triggers, the outbox, the copies and the reconciliation",
+      "source": "T3-architecture-domain-model-annex.md:31",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-004",
+      "type": "D",
+      "area": "T3",
+      "title": "One PostgreSQL database, one object store for media, one queue. No second database for a module",
+      "source": "T3-architecture-domain-model-annex.md:32",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-005",
+      "type": "D",
+      "area": "T3",
+      "title": "Every module reaches the ERP only through the integration module and its port (one fixed set of operations towards the ERP). The NAV adapter and the Business Central adapter each implement that port",
+      "source": "T3-architecture-domain-model-annex.md:33",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-006",
+      "type": "D",
+      "area": "T3",
+      "title": "The platform is provider-neutral: it runs on a container platform on any of the three major clouds. The application uses no managed service that only one cloud provider offers (database, queue, object store and container runtime follow open standards). The external services of T2 section 4.3 are …",
+      "source": "T3-architecture-domain-model-annex.md:34",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-007",
+      "type": "D",
+      "area": "T3",
+      "title": "A read copy (ERP data held in the platform's own database for reading) per shop domain, written by a scheduled sync or an event, never by a user request",
+      "source": "T3-architecture-domain-model-annex.md:35",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-008",
+      "type": "D",
+      "area": "T3",
+      "title": "The front end is server-rendered for the shop and the advisor page, and client-rendered for the advisor portal and the head office portal (A4-C-020)",
+      "source": "T3-architecture-domain-model-annex.md:36",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-009",
+      "type": "D",
+      "area": "T3",
+      "title": "Identity is one person record with roles. The login is linked to the ERP customer number when the ERP has created one (section 4); a person keeps the customer role when they become an advisor. This differs from the advisor handbook 7/2025 §10.5.4, which ends the customer status at the enrolment as …",
+      "source": "T3-architecture-domain-model-annex.md:37",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-010",
+      "type": "D",
+      "area": "T3",
+      "title": "The AI functions go through one gateway, with the prompt, the limit, the record and the off switch per function",
+      "source": "T3-architecture-domain-model-annex.md:38",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-011",
+      "type": "D",
+      "area": "T3",
+      "title": "The cloud provider: T3-O-001",
+      "source": "T3-architecture-domain-model-annex.md:39",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-012",
+      "type": "D",
+      "area": "T3",
+      "title": "The identity provider: T3-O-002",
+      "source": "T3-architecture-domain-model-annex.md:40",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-013",
+      "type": "D",
+      "area": "T3",
+      "title": "One brand: ANIfit, with the imprint of provital.com. The data model carries a brand field",
+      "source": "T3-architecture-domain-model-annex.md:41",
+      "status": "active"
+    },
+    {
+      "id": "T3-D-014",
+      "type": "D",
+      "area": "T3",
+      "title": "Germany and Austria. The platform supports several languages; R1 runs German and English. Provital writes and proofreads the texts and checks them in the acceptance test. The texts, loading and tests of a further language follow after R1 through change control. The country decides the price, the …",
+      "source": "T3-architecture-domain-model-annex.md:42",
+      "status": "active"
+    },
+    {
+      "id": "T3-O-001",
+      "type": "O",
+      "area": "T3",
+      "title": "The platform runs on a container platform in the European Union, provider-neutral, in an account that can move to Provital's. Provital names the cloud provider",
+      "source": "T3-architecture-domain-model-annex.md:130",
+      "status": "active"
+    },
+    {
+      "id": "T3-O-002",
+      "type": "O",
+      "area": "T3",
+      "title": "The platform's login and the staff sign-in use a standard protocol, so that the component behind them stays replaceable. Staff sign in to the head office portal through the company directory",
+      "source": "T3-architecture-domain-model-annex.md:131",
+      "status": "active"
+    },
+    {
+      "id": "T3-O-003",
+      "type": "O",
+      "area": "T3",
+      "title": "The consent types are the four types of section 4. The data protection officer defines the texts and the retention per type; the texts come from legal counsel",
+      "source": "T3-architecture-domain-model-annex.md:132",
+      "status": "active"
+    },
+    {
+      "id": "T3-O-004",
+      "type": "O",
+      "area": "T3",
+      "title": "Each person has one ERP customer number, and it does not change",
+      "source": "T3-architecture-domain-model-annex.md:133",
+      "status": "active"
+    },
+    {
+      "id": "T3-O-005",
+      "type": "O",
+      "area": "T3",
+      "title": "Orders and invoices follow the ERP retention. The platform keeps 24 months of journey and task data. The data protection officer sets the retention of every other platform data domain",
+      "source": "T3-architecture-domain-model-annex.md:134",
+      "status": "active"
+    },
+    {
+      "id": "T3-P-001",
+      "type": "P",
+      "area": "T3",
+      "title": "The customer number in the NAV export, and its uniqueness",
+      "source": "T3-architecture-domain-model-annex.md:138",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-001",
+      "type": "AC",
+      "area": "T4",
+      "title": "Before the cutover, the load test at the reference load meets the response times of section 2. At twice the expected peak the shop stays available and no order is lost; the response times may be higher",
+      "source": "T4-quality-security-operations-annex.md:86",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-002",
+      "type": "AC",
+      "area": "T4",
+      "title": "No open high finding in the platform at RC or at the cutover, or Provital's written decision to start; medium findings have a dated plan",
+      "source": "T4-quality-security-operations-annex.md:87",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-003",
+      "type": "AC",
+      "area": "T4",
+      "title": "A restore from a backup is performed in the test and meets the recovery time objective",
+      "source": "T4-quality-security-operations-annex.md:88",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-004",
+      "type": "AC",
+      "area": "T4",
+      "title": "Each area of the monitoring dashboard produces its alert in a test",
+      "source": "T4-quality-security-operations-annex.md:89",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-005",
+      "type": "AC",
+      "area": "T4",
+      "title": "A deletion and an export request run in the head office portal, and the result is logged",
+      "source": "T4-quality-security-operations-annex.md:90",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-006",
+      "type": "AC",
+      "area": "T4",
+      "title": "A log sample shows no unmasked personal data",
+      "source": "T4-quality-security-operations-annex.md:91",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-007",
+      "type": "AC",
+      "area": "T4",
+      "title": "The accessibility test of A6-O-003 runs on the areas of the target, shows no open item of level A, and its report lists each other open item with a plan",
+      "source": "T4-quality-security-operations-annex.md:92",
+      "status": "active"
+    },
+    {
+      "id": "T4-AC-008",
+      "type": "AC",
+      "area": "T4",
+      "title": "Provital's operations confirm the handover of section 5, or name each missing item, within ten working days after the end of the hypercare",
+      "source": "T4-quality-security-operations-annex.md:93",
+      "status": "active"
+    },
+    {
+      "id": "T4-O-001",
+      "type": "O",
+      "area": "T4",
+      "title": "The values of section 2 apply",
+      "source": "T4-quality-security-operations-annex.md:99",
+      "status": "active"
+    },
+    {
+      "id": "T4-O-002",
+      "type": "O",
+      "area": "T4",
+      "title": "57Blocks staff outside the European Union access production personal data only on the legal basis that Provital's legal counsel confirms (processing agreement, transfer safeguards). Until then they work on masked data; work that needs personal data is done by 57Blocks staff in the European Union, …",
+      "source": "T4-quality-security-operations-annex.md:100",
+      "status": "active"
+    },
+    {
+      "id": "T4-O-003",
+      "type": "O",
+      "area": "T4",
+      "title": "An external penetration test before RC and a retest before the cutover. Provital receives the reports. Who commissions the test is set in the contract",
+      "source": "T4-quality-security-operations-annex.md:101",
+      "status": "active"
+    },
+    {
+      "id": "T4-O-004",
+      "type": "O",
+      "area": "T4",
+      "title": "Basic care after the hypercare (A7 §7), set before the hypercare ends",
+      "source": "T4-quality-security-operations-annex.md:102",
+      "status": "active"
+    },
+    {
+      "id": "T4-P-001",
+      "type": "P",
+      "area": "T4",
+      "title": "The impact assessment, written and signed. 57Blocks supplies the technical description of the processing",
+      "source": "T4-quality-security-operations-annex.md:106",
+      "status": "active"
+    },
+    {
+      "id": "T4-P-002",
+      "type": "P",
+      "area": "T4",
+      "title": "The review of the processing agreements and subcontractor list",
+      "source": "T4-quality-security-operations-annex.md:107",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-001",
+      "type": "R",
+      "area": "T4",
+      "title": "Availability of the shop and the account per month, watched in the hypercare as a target, not a service level",
+      "source": "T4-quality-security-operations-annex.md:26",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-002",
+      "type": "R",
+      "area": "T4",
+      "title": "Response time of a page, 95th percentile, at the reference load",
+      "source": "T4-quality-security-operations-annex.md:27",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-003",
+      "type": "R",
+      "area": "T4",
+      "title": "Response time of the checkout steps, 95th percentile",
+      "source": "T4-quality-security-operations-annex.md:28",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-004",
+      "type": "R",
+      "area": "T4",
+      "title": "Reference load",
+      "source": "T4-quality-security-operations-annex.md:29",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-005",
+      "type": "R",
+      "area": "T4",
+      "title": "Order volume",
+      "source": "T4-quality-security-operations-annex.md:30",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-006",
+      "type": "R",
+      "area": "T4",
+      "title": "The due-delivery run",
+      "source": "T4-quality-security-operations-annex.md:31",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-007",
+      "type": "R",
+      "area": "T4",
+      "title": "The commission run",
+      "source": "T4-quality-security-operations-annex.md:32",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-008",
+      "type": "R",
+      "area": "T4",
+      "title": "Backup",
+      "source": "T4-quality-security-operations-annex.md:33",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-009",
+      "type": "R",
+      "area": "T4",
+      "title": "Recovery",
+      "source": "T4-quality-security-operations-annex.md:34",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-010",
+      "type": "R",
+      "area": "T4",
+      "title": "A restore test",
+      "source": "T4-quality-security-operations-annex.md:35",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-011",
+      "type": "R",
+      "area": "T4",
+      "title": "Browsers and devices",
+      "source": "T4-quality-security-operations-annex.md:36",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-012",
+      "type": "R",
+      "area": "T4",
+      "title": "Accessibility",
+      "source": "T4-quality-security-operations-annex.md:37",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-013",
+      "type": "R",
+      "area": "T4",
+      "title": "Data retention",
+      "source": "T4-quality-security-operations-annex.md:38",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-014",
+      "type": "R",
+      "area": "T4",
+      "title": "The media pipeline",
+      "source": "T4-quality-security-operations-annex.md:39",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-015",
+      "type": "R",
+      "area": "T4",
+      "title": "E-mail delivery",
+      "source": "T4-quality-security-operations-annex.md:40",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-020",
+      "type": "R",
+      "area": "T4",
+      "title": "Transport encryption with a current protocol; a strict transport policy in the browser",
+      "source": "T4-quality-security-operations-annex.md:46",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-021",
+      "type": "R",
+      "area": "T4",
+      "title": "Data at rest encrypted, including the backups and the object store",
+      "source": "T4-quality-security-operations-annex.md:47",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-022",
+      "type": "R",
+      "area": "T4",
+      "title": "Secrets in a managed store, rotated, never in the code or the repository",
+      "source": "T4-quality-security-operations-annex.md:48",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-023",
+      "type": "R",
+      "area": "T4",
+      "title": "A role model with the least privilege; a support person sees a customer record only through a role of the head office portal and within T4-O-002, and each access is logged",
+      "source": "T4-quality-security-operations-annex.md:49",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-024",
+      "type": "R",
+      "area": "T4",
+      "title": "The application follows the OWASP top ten; an input is validated at the boundary; a query is parameterised",
+      "source": "T4-quality-security-operations-annex.md:50",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-025",
+      "type": "R",
+      "area": "T4",
+      "title": "Rate limits and bot protection on login, registration and checkout",
+      "source": "T4-quality-security-operations-annex.md:51",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-026",
+      "type": "R",
+      "area": "T4",
+      "title": "An external penetration test on the RC build before RC, and one retest of the fixes before the cutover (T4-O-003). No open high finding in the platform at RC or at the cutover, or Provital's written decision to start",
+      "source": "T4-quality-security-operations-annex.md:52",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-027",
+      "type": "R",
+      "area": "T4",
+      "title": "A vulnerability process with an owner, a fix time per severity and a monthly review. 57Blocks runs it until the end of the hypercare",
+      "source": "T4-quality-security-operations-annex.md:53",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-028",
+      "type": "R",
+      "area": "T4",
+      "title": "An audit log of the actions in the head office portal, the commission settings and the releases, with a retention of two years",
+      "source": "T4-quality-security-operations-annex.md:54",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-029",
+      "type": "R",
+      "area": "T4",
+      "title": "An incident process with severity, contact and notification duty. 57Blocks informs Provital of a personal data breach without delay; Provital, as the controller, notifies the authority and the persons",
+      "source": "T4-quality-security-operations-annex.md:55",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-030",
+      "type": "R",
+      "area": "T4",
+      "title": "A data protection impact assessment, signed before the first load of production personal data (the rehearsal, T1 section 4), covering the shop, the journeys, the commission and the AI functions",
+      "source": "T4-quality-security-operations-annex.md:61",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-031",
+      "type": "R",
+      "area": "T4",
+      "title": "A processing agreement with each external service, signed by the party that contracts the service as the contract sets, and a named subcontractor list",
+      "source": "T4-quality-security-operations-annex.md:62",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-032",
+      "type": "R",
+      "area": "T4",
+      "title": "Hosting and processing in the European Union. A service outside the Union needs Provital's written approval",
+      "source": "T4-quality-security-operations-annex.md:63",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-033",
+      "type": "R",
+      "area": "T4",
+      "title": "Data-subject requests as T3-C-003. A correction of ERP-mastered data goes to the ERP as a request (T2-C-003)",
+      "source": "T4-quality-security-operations-annex.md:64",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-034",
+      "type": "R",
+      "area": "T4",
+      "title": "The log masks personal data; a test verifies it before RC",
+      "source": "T4-quality-security-operations-annex.md:65",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-035",
+      "type": "R",
+      "area": "T4",
+      "title": "The AI functions send no personal data to the provider beyond what the function needs, and none at all where the function runs on public content",
+      "source": "T4-quality-security-operations-annex.md:66",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-036",
+      "type": "R",
+      "area": "T4",
+      "title": "The outbox keeps order payloads encrypted. It removes bank details when the ERP confirms the order (T4-R-037). It deletes the rest of the payload 90 days after the confirmation. The data protection officer confirms the period",
+      "source": "T4-quality-security-operations-annex.md:67",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-037",
+      "type": "R",
+      "area": "T4",
+      "title": "Card data never reaches the platform; it stores only the provider's token. Bank details pass to the ERP with the order and are not kept after the ERP confirms it",
+      "source": "T4-quality-security-operations-annex.md:68",
+      "status": "active"
+    },
+    {
+      "id": "T4-R-038",
+      "type": "R",
+      "area": "T4",
+      "title": "A cookie banner asks consent before any non-essential cookie and records it; legal counsel provides texts. Web analytics runs only with this consent (T2-C-037)",
+      "source": "T4-quality-security-operations-annex.md:69",
+      "status": "active"
+    }
+  ]
+}

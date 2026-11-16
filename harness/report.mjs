@@ -127,7 +127,9 @@ for (const [name, e] of Object.entries(experiments)) {
   md += `\n## ${name}: by ${varying}\n\n${table(groups.map(([v, rs]) => row(v, rs)))}\n${grade(e, groups)}`;
   if (e.tasks.length > 1) {
     md += `\n### ${name}: by task and ${varying}\n\n`;
-    md += table(e.tasks.flatMap((t) => values.map((v) => row(`${t} / ${v}`, inExp.filter((r) => r.task === t && r[varying] === v)))));
+    // Cells without a run yet are left out.
+    const cells = e.tasks.flatMap((t) => values.map((v) => [`${t} / ${v}`, inExp.filter((r) => r.task === t && r[varying] === v)]));
+    md += table(cells.filter(([, rs]) => rs.length).map(([label, rs]) => row(label, rs)));
     md += "\n";
   }
 }
