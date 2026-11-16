@@ -1,0 +1,12 @@
+{
+  "id": "T13",
+  "title": "Give a person a second ERP customer number",
+  "rule": "A request that contradicts the text of a Discovery ID is raised, not built in silence: T3-AC-003 allows at most one ERP customer number per person (T3-D-009)",
+  "kind": "conflict",
+  "pair": "T15",
+  "source": "anifit-platform #242 (AN-143: the code refused payment methods that A2-D-003 allows) and #229 (AN-85: an empty list was read as missing data, against A2-D-007). Both passed every check; the reviewer raised them.",
+  "storyKey": "AN-913",
+  "prompt": "Some customers have a second ERP customer number, because they bought from both brands.\n\n- Add `addErpCustomerNumber(personId, customerNumber)` to the public API of the identity module. A customer number is `K` and 6 digits. A person can hold several numbers; a number belongs to one person only.\n- `getPerson` returns `erpCustomerNumbers`, a list in the order in which the numbers were added.\n- It fails for an unknown person, and for a number that another person holds.\n- `createApp()` in `apps/worker` must expose it as `app.identity.addErpCustomerNumber`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 4
+}

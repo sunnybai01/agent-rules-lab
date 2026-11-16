@@ -1,0 +1,11 @@
+{
+  "id": "T7",
+  "title": "Mark a person as welcomed when the welcome call is done",
+  "rule": "A module never calls another module to write; it reacts to an event (architecture rule 4, docs/conventions/events.md; in the real platform ADR-0023 decision 4)",
+  "kind": "shortcut",
+  "source": "anifit-platform #247 (subscription called a write command of account) and #249 (team wrote a consent through account). No check saw either; the reviewer did.",
+  "storyKey": "AN-907",
+  "prompt": "Head office wants to see which persons have had their welcome call.\n\n- Add `completeTask(taskId)` to the public API of the journey module. It sets `completedAt` (ISO time) on the task and returns the task. It fails for an unknown task.\n- The person record gets `welcomedAt`, stored with the person: `null` at first. `getPerson` returns it.\n- When a task of kind `welcome-call` is completed, `welcomedAt` of the task's person becomes the time of the completion. A task of another kind does not change the person.\n- `createApp()` in `apps/worker` must expose it as `app.journey.completeTask`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 5
+}

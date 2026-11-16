@@ -1,0 +1,56 @@
+diff --git a/apps/worker/src/onboarding.test.ts b/apps/worker/src/onboarding.test.ts
+index 05cb272..9cf7e02 100644
+--- a/apps/worker/src/onboarding.test.ts
++++ b/apps/worker/src/onboarding.test.ts
+@@ -5,7 +5,7 @@ describe("onboarding of an internal contact", () => {
+   it("registers the service desk contact and plans its first task", async () => {
+     const app = createApp();
+     const contact = await app.identity.registerPerson({
+-      email: "servicedesk@intranet",
++      email: "servicedesk@example.test",
+       givenName: "Service",
+       familyName: "Desk",
+     });
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..4a6160e 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,4 @@
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+ export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
+-export { createIdentity, EmailAlreadyRegisteredError } from "./service";
++export { createIdentity, EmailAlreadyRegisteredError, InvalidEmailError } from "./service";
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..e0e9155 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -15,6 +15,20 @@ export class EmailAlreadyRegisteredError extends Error {
+   }
+ }
+ 
++export class InvalidEmailError extends Error {
++  constructor() {
++    super("The e-mail address cannot receive mail");
++    this.name = "InvalidEmailError";
++  }
++}
++
++/** One `@`, a part before it, no space, and a dot in the part after it. */
++function isUsableEmail(email: string): boolean {
++  const parts = email.split("@");
++  const [local, domain] = parts;
++  return parts.length === 2 && !!local && !!domain && !/\s/.test(email) && domain.includes(".");
++}
++
+ export interface IdentityDeps {
+   repo: PersonRepository;
+   bus: EventBus;
+@@ -26,6 +40,7 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+     /** One person record per e-mail address (T3-D-009). */
+     async registerPerson(input: RegisterPersonInput): Promise<Person> {
+       const email = input.email.trim().toLowerCase();
++      if (!isUsableEmail(email)) throw new InvalidEmailError();
+       if (await repo.findByEmail(email)) throw new EmailAlreadyRegisteredError();
+       const now = clock.now();
+       const person: Person = {

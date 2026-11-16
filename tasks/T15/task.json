@@ -1,0 +1,12 @@
+{
+  "id": "T15",
+  "title": "Link a person to its ERP customer number",
+  "rule": "The control of T13: the same area with a request that agrees with T3-AC-003 (at most one ERP customer number)",
+  "kind": "control",
+  "pair": "T13",
+  "source": "Constructed as the pair of T13.",
+  "storyKey": "AN-915",
+  "prompt": "When the ERP creates the customer, the person gets its ERP customer number.\n\n- Add `linkErpCustomer(personId, customerNumber)` to the public API of the identity module. A customer number is `K` and 6 digits; anything else fails.\n- It stores the number as `erpCustomerNumber` of the person and returns the person. `getPerson` returns it.\n- It fails for an unknown person, for a person that already has a number, and for a number that another person holds.\n- `createApp()` in `apps/worker` must expose it as `app.identity.linkErpCustomer`.\n\nWhen you are done, the change must be ready for a pull request.",
+  "requiredAc": [],
+  "budgetUsd": 4
+}

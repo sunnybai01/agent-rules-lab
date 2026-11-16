@@ -1,0 +1,136 @@
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..735dd40 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,4 @@
+-export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+-export { createJourney } from "./service";
++export type { CreateTaskInput, Journey, JourneyDeps, RequestCallbackInput } from "./service";
++export { CallbackDateError, createJourney } from "./service";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/schema.ts b/packages/core/src/journey/schema.ts
+index 38d8abf..c207d48 100644
+--- a/packages/core/src/journey/schema.ts
++++ b/packages/core/src/journey/schema.ts
+@@ -11,6 +11,7 @@ export const tasks = withDataMeta(
+     title: text("title").notNull(),
+     dueDate: text("due_date").notNull(),
+     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
++    requestId: text("request_id").unique(),
+   }),
+   {
+     id: notPersonal,
+@@ -19,5 +20,6 @@ export const tasks = withDataMeta(
+     title: notPersonal,
+     dueDate: notPersonal,
+     createdAt: notPersonal,
++    requestId: notPersonal,
+   },
+ );
+diff --git a/packages/core/src/journey/service.ts b/packages/core/src/journey/service.ts
+index d734128..cef5a89 100644
+--- a/packages/core/src/journey/service.ts
++++ b/packages/core/src/journey/service.ts
+@@ -1,4 +1,4 @@
+-import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
++import { addDays, businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Task, TaskRepository } from "./task";
+ 
+ export interface CreateTaskInput {
+@@ -8,6 +8,20 @@ export interface CreateTaskInput {
+   dueDate?: string;
+ }
+ 
++export interface RequestCallbackInput {
++  requestId: string;
++  personId: string;
++  /** Business date, YYYY-MM-DD: from tomorrow to 14 days after today. */
++  date: string;
++}
++
++export class CallbackDateError extends Error {
++  constructor() {
++    super("The date must be from tomorrow to 14 days after today");
++    this.name = "CallbackDateError";
++  }
++}
++
+ export interface JourneyDeps {
+   repo: TaskRepository;
+   bus: EventBus;
+@@ -25,6 +39,30 @@ export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+         title: input.title,
+         dueDate: input.dueDate ?? businessDate(now),
+         createdAt: now.toISOString(),
++        requestId: null,
++      };
++      await repo.insert(task);
++      return task;
++    },
++
++    async requestCallback(input: RequestCallbackInput): Promise<Task> {
++      const now = clock.now();
++      const today = businessDate(now);
++      const valid =
++        /^\d{4}-\d{2}-\d{2}$/.test(input.date) &&
++        input.date > today &&
++        input.date <= addDays(today, 14);
++      if (!valid) throw new CallbackDateError();
++      const existing = await repo.findByRequestId(input.requestId);
++      if (existing) return existing;
++      const task: Task = {
++        id: newId(now),
++        personId: input.personId,
++        kind: "callback",
++        title: "Call back",
++        dueDate: input.date,
++        createdAt: now.toISOString(),
++        requestId: input.requestId,
+       };
+       await repo.insert(task);
+       return task;
+diff --git a/packages/core/src/journey/task.ts b/packages/core/src/journey/task.ts
+index b50d2fd..3aaba54 100644
+--- a/packages/core/src/journey/task.ts
++++ b/packages/core/src/journey/task.ts
+@@ -6,10 +6,13 @@ export interface Task {
+   /** Business date, YYYY-MM-DD in Europe/Berlin. */
+   readonly dueDate: string;
+   readonly createdAt: string;
++  /** The ID of the request that created the task, when the caller may repeat the request. */
++  readonly requestId: string | null;
+ }
+ 
+ export interface TaskRepository {
+   insert(task: Task): Promise<void>;
++  findByRequestId(requestId: string): Promise<Task | null>;
+   listByPerson(personId: string): Promise<Task[]>;
+ }
+ 
+@@ -20,6 +23,10 @@ export class InMemoryTaskRepository implements TaskRepository {
+     this.rows.push(task);
+   }
+ 
++  async findByRequestId(requestId: string): Promise<Task | null> {
++    return this.rows.find((t) => t.requestId === requestId) ?? null;
++  }
++
+   async listByPerson(personId: string): Promise<Task[]> {
+     return this.rows.filter((t) => t.personId === personId);
+   }
+diff --git a/packages/core/src/kernel/time.ts b/packages/core/src/kernel/time.ts
+index 244f41b..1341f91 100644
+--- a/packages/core/src/kernel/time.ts
++++ b/packages/core/src/kernel/time.ts
+@@ -26,3 +26,10 @@ const businessDateFormat = new Intl.DateTimeFormat("en-CA", {
+ export function businessDate(instant: Date): string {
+   return businessDateFormat.format(instant);
+ }
++
++/** The business date `days` calendar days after `date` (YYYY-MM-DD). */
++export function addDays(date: string, days: number): string {
++  const day = new Date(`${date}T00:00:00Z`);
++  day.setUTCDate(day.getUTCDate() + days);
++  return day.toISOString().slice(0, 10);
++}

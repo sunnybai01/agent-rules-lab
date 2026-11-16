@@ -1,0 +1,85 @@
+diff --git a/packages/core/src/journey/index.ts b/packages/core/src/journey/index.ts
+index 454327e..a66eba9 100644
+--- a/packages/core/src/journey/index.ts
++++ b/packages/core/src/journey/index.ts
+@@ -1,4 +1,4 @@
+ export type { CreateTaskInput, Journey, JourneyDeps } from "./service";
+-export { createJourney } from "./service";
++export { createJourney, WorkingDaysError } from "./service";
+ export type { Task, TaskRepository } from "./task";
+ export { InMemoryTaskRepository } from "./task";
+diff --git a/packages/core/src/journey/service.ts b/packages/core/src/journey/service.ts
+index d734128..85d2880 100644
+--- a/packages/core/src/journey/service.ts
++++ b/packages/core/src/journey/service.ts
+@@ -1,4 +1,11 @@
+-import { businessDate, type Clock, type EventBus, newId, systemClock } from "../kernel";
++import {
++  addWorkingDays,
++  businessDate,
++  type Clock,
++  type EventBus,
++  newId,
++  systemClock,
++} from "../kernel";
+ import type { Task, TaskRepository } from "./task";
+ 
+ export interface CreateTaskInput {
+@@ -8,6 +15,13 @@ export interface CreateTaskInput {
+   dueDate?: string;
+ }
+ 
++export class WorkingDaysError extends Error {
++  constructor() {
++    super("workingDays must be a whole number from 1 to 30");
++    this.name = "WorkingDaysError";
++  }
++}
++
+ export interface JourneyDeps {
+   repo: TaskRepository;
+   bus: EventBus;
+@@ -30,6 +44,23 @@ export function createJourney({ repo, clock = systemClock }: JourneyDeps) {
+       return task;
+     },
+ 
++    /** A follow-up call, due a number of working days after today's business date. */
++    async createFollowUp(personId: string, workingDays: number): Promise<Task> {
++      if (!Number.isInteger(workingDays) || workingDays < 1 || workingDays > 30)
++        throw new WorkingDaysError();
++      const now = clock.now();
++      const task: Task = {
++        id: newId(now),
++        personId,
++        kind: "follow-up",
++        title: "Follow-up call",
++        dueDate: addWorkingDays(businessDate(now), workingDays),
++        createdAt: now.toISOString(),
++      };
++      await repo.insert(task);
++      return task;
++    },
++
+     async listTasks(personId: string): Promise<Task[]> {
+       return repo.listByPerson(personId);
+     },
+diff --git a/packages/core/src/kernel/time.ts b/packages/core/src/kernel/time.ts
+index 244f41b..b7c9a34 100644
+--- a/packages/core/src/kernel/time.ts
++++ b/packages/core/src/kernel/time.ts
+@@ -26,3 +26,15 @@ const businessDateFormat = new Intl.DateTimeFormat("en-CA", {
+ export function businessDate(instant: Date): string {
+   return businessDateFormat.format(instant);
+ }
++
++/** The business date `days` working days (Monday to Friday) after `date` (YYYY-MM-DD). */
++export function addWorkingDays(date: string, days: number): string {
++  const day = new Date(`${date}T00:00:00Z`);
++  let left = days;
++  while (left > 0) {
++    day.setUTCDate(day.getUTCDate() + 1);
++    const weekday = day.getUTCDay();
++    if (weekday !== 0 && weekday !== 6) left -= 1;
++  }
++  return day.toISOString().slice(0, 10);
++}

@@ -1,0 +1,177 @@
+diff --git a/apps/worker/src/index.ts b/apps/worker/src/index.ts
+index 2d35fe0..9697377 100644
+--- a/apps/worker/src/index.ts
++++ b/apps/worker/src/index.ts
+@@ -18,6 +18,7 @@ export function createApp(options: AppOptions = {}) {
+   const identityApi = identity.createIdentity({
+     repo: new identity.InMemoryPersonRepository(),
+     bus,
++    integration: integrationApi,
+     clock,
+   });
+   const journeyApi = journey.createJourney({
+diff --git a/packages/core/src/identity/index.ts b/packages/core/src/identity/index.ts
+index f189afa..9582153 100644
+--- a/packages/core/src/identity/index.ts
++++ b/packages/core/src/identity/index.ts
+@@ -1,4 +1,9 @@
+ export type { Person, PersonRegistered, PersonRepository } from "./person";
+ export { InMemoryPersonRepository } from "./person";
+-export type { Identity, IdentityDeps, RegisterPersonInput } from "./service";
++export type {
++  CustomerPaymentOptions,
++  Identity,
++  IdentityDeps,
++  RegisterPersonInput,
++} from "./service";
+ export { createIdentity, EmailAlreadyRegisteredError } from "./service";
+diff --git a/packages/core/src/identity/service.ts b/packages/core/src/identity/service.ts
+index 1658b1c..6bdb1e0 100644
+--- a/packages/core/src/identity/service.ts
++++ b/packages/core/src/identity/service.ts
+@@ -1,3 +1,4 @@
++import type { Integration } from "../integration";
+ import { type Clock, type EventBus, newId, systemClock } from "../kernel";
+ import type { Person, PersonRegistered, PersonRepository } from "./person";
+ 
+@@ -15,13 +16,22 @@ export class EmailAlreadyRegisteredError extends Error {
+   }
+ }
+ 
++export interface CustomerPaymentOptions {
++  customerNumber: string;
++  methods: string[];
++  sourceVersion: string;
++  readAt: string;
++}
++
+ export interface IdentityDeps {
+   repo: PersonRepository;
+   bus: EventBus;
++  /** The ERP is reached only through the integration module (T3-D-005). */
++  integration?: Pick<Integration, "readPaymentOptions">;
+   clock?: Clock;
+ }
+ 
+-export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps) {
++export function createIdentity({ repo, bus, integration, clock = systemClock }: IdentityDeps) {
+   return {
+     /** One person record per e-mail address (T3-D-009). */
+     async registerPerson(input: RegisterPersonInput): Promise<Person> {
+@@ -48,6 +58,18 @@ export function createIdentity({ repo, bus, clock = systemClock }: IdentityDeps)
+       return person;
+     },
+ 
++    async getPaymentOptions(customerNumber: string): Promise<CustomerPaymentOptions | null> {
++      if (!integration) throw new Error("identity has no integration module");
++      const read = await integration.readPaymentOptions(customerNumber);
++      if (!read) return null;
++      return {
++        customerNumber: read.data.customerNumber,
++        methods: read.data.methods,
++        sourceVersion: read.sourceVersion,
++        readAt: read.readAt,
++      };
++    },
++
+     async getPerson(id: string): Promise<Person | null> {
+       return repo.findById(id);
+     },
+diff --git a/packages/core/src/integration/index.ts b/packages/core/src/integration/index.ts
+index 701e12f..e127e55 100644
+--- a/packages/core/src/integration/index.ts
++++ b/packages/core/src/integration/index.ts
+@@ -1,4 +1,4 @@
+-import type { CustomerMasterData, ErpPort } from "@provital/erp-port";
++import type { CustomerMasterData, ErpPort, PaymentOptions } from "@provital/erp-port";
+ import type { Clock } from "../kernel";
+ import { systemClock } from "../kernel";
+ 
+@@ -17,6 +17,8 @@ export interface ErpRead<T> {
+ 
+ export interface Integration {
+   readCustomer(customerNumber: string): Promise<ErpRead<CustomerMasterData> | null>;
++  /** A synchronous read at the checkout (T2 section 4). */
++  readPaymentOptions(customerNumber: string): Promise<ErpRead<PaymentOptions> | null>;
+ }
+ 
+ export interface IntegrationDeps {
+@@ -36,5 +38,15 @@ export function createIntegration({ erp, clock = systemClock }: IntegrationDeps)
+         readAt: clock.now().toISOString(),
+       };
+     },
++    async readPaymentOptions(customerNumber) {
++      const data = await erp.readPaymentOptions(customerNumber);
++      if (!data) return null;
++      return {
++        data,
++        source: "erp",
++        sourceVersion: data.sourceVersion,
++        readAt: clock.now().toISOString(),
++      };
++    },
+   };
+ }
+diff --git a/packages/erp-fake/src/index.ts b/packages/erp-fake/src/index.ts
+index ae18057..6e50e27 100644
+--- a/packages/erp-fake/src/index.ts
++++ b/packages/erp-fake/src/index.ts
+@@ -1,4 +1,9 @@
+-import { type CustomerMasterData, type ErpPort, ErpUnavailableError } from "@provital/erp-port";
++import {
++  type CustomerMasterData,
++  type ErpPort,
++  ErpUnavailableError,
++  type PaymentOptions,
++} from "@provital/erp-port";
+ 
+ /** Synthetic data only. No personal data of real customers or advisors. */
+ export const fakeCustomers: CustomerMasterData[] = [
+@@ -20,6 +25,11 @@ export const fakeCustomers: CustomerMasterData[] = [
+   },
+ ];
+ 
++export const fakePaymentOptions: PaymentOptions[] = [
++  { customerNumber: "K100001", methods: ["invoice", "card"], sourceVersion: "v1" },
++  { customerNumber: "K100002", methods: ["card"], sourceVersion: "v2" },
++];
++
+ export interface FakeErpOptions {
+   /** When true, every operation throws ErpUnavailableError. */
+   unavailable?: boolean;
+@@ -32,5 +42,10 @@ export function createFakeErp(options: FakeErpOptions = {}): ErpPort {
+       const found = fakeCustomers.find((c) => c.customerNumber === customerNumber);
+       return found ? structuredClone(found) : null;
+     },
++    async readPaymentOptions(customerNumber) {
++      if (options.unavailable) throw new ErpUnavailableError("readPaymentOptions");
++      const found = fakePaymentOptions.find((o) => o.customerNumber === customerNumber);
++      return found ? structuredClone(found) : null;
++    },
+   };
+ }
+diff --git a/packages/erp-port/src/index.ts b/packages/erp-port/src/index.ts
+index 6ae0644..1e6f219 100644
+--- a/packages/erp-port/src/index.ts
++++ b/packages/erp-port/src/index.ts
+@@ -18,6 +18,13 @@ export const CustomerMasterData = z.object({
+ });
+ export type CustomerMasterData = z.infer<typeof CustomerMasterData>;
+ 
++export const PaymentOptions = z.object({
++  customerNumber: z.string().regex(/^K\d{6}$/),
++  methods: z.array(z.enum(["invoice", "directDebit", "card"])),
++  sourceVersion: z.string(),
++});
++export type PaymentOptions = z.infer<typeof PaymentOptions>;
++
+ export class ErpUnavailableError extends Error {
+   constructor(operation: string) {
+     super(`ERP unavailable: ${operation}`);
+@@ -28,4 +35,6 @@ export class ErpUnavailableError extends Error {
+ export interface ErpPort {
+   /** Returns null when the ERP has no customer with this number. */
+   readCustomer(customerNumber: string): Promise<CustomerMasterData | null>;
++  /** The payment options of a customer, read at the checkout. Null when the ERP has no such customer. */
++  readPaymentOptions(customerNumber: string): Promise<PaymentOptions | null>;
+ }

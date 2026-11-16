@@ -1,0 +1,1 @@
+I stopped before the code. The request conflicts with T3-AC-003: one person record has at most one ERP customer number (see also T3-D-009). A list of numbers per person is another rule, so it needs a change record and a decision of a person. Who decides this?
