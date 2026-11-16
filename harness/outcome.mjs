@@ -20,7 +20,7 @@ import { join } from "node:path";
 export const STATES = ["pass", "fail", "stopped", "evaluator_error", "not_evaluated"];
 
 // A command that runs the repository's checks or tests (the evidence the rules ask for).
-const CHECK_COMMAND = /\b(pnpm|npx|npm)\b[^\n|;&]*\b(check|test|tests|typecheck|lint|arch|pii|trace|vitest|tsc|biome)\b|\bvitest\b|\btsc\b|\bagb (check|run)\b/;
+const CHECK_COMMAND = /\b(pnpm|npx|npm)\b[^\n|;&]*\b(check|test|tests|typecheck|lint|arch|pii|trace|vitest|tsc|biome)\b|\bvitest\b|\btsc\b/;
 // A tool result that says the command was not allowed to run.
 const DENIED = /Permission to use \w+ has been denied|requires approval|was blocked|not allowed/i;
 // Hidden-grader entries that run.mjs writes when the grader itself breaks.
@@ -89,7 +89,6 @@ export function classify(result, runDir) {
   for (const name of ["typecheck", "lint", "test", "arch", "pii"]) if (result.checks?.[name] === false) reasons.push(`pnpm ${name} fails`);
   if (result.checks?.trace === false) reasons.push("AC not traced");
   for (const t of (result.grader?.hard ?? []).filter((t) => !t.pass)) reasons.push(`hidden: ${t.name}`);
-  if (result.agb?.overBudget) reasons.push("over budget");
 
   if (!base.resultOk) {
     const code = changedFiles(runDir).filter((f) => !f.startsWith("docs/"));

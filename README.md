@@ -13,12 +13,11 @@ Experiments that choose the documentation architecture and the agent workflow fo
 | [variants/layout-c](variants/layout-c/) | E1-C: short root `AGENTS.md`, `docs/README.md` map, `docs/conventions/`, ADR template, `AGENTS.md` + `CLAUDE.md` per module |
 | [variants/layout-v2](variants/layout-v2/) | Tier A of [the v2 proposal](proposals/ai-dev-spec-v2.md): layout C plus the Discovery ID register, `tools/{ids,docs-check,pr-check}`, the stricter `pii-check`, spec and plan templates, skills `story-start`, `implement`, `review`, `handoff`, subagent `reviewer`, PR template, CI. Has its own story workflow: with `--workflow spec` the harness uses its skills, not `variants/workflow`. Its extra `pnpm ids` and `pnpm docs` results are recorded in `checks`, but not in `checks.all` |
 | [variants/layout-v21](variants/layout-v21/) | v2.1: v2 with the revisions of [the proposal, part 5](proposals/ai-dev-spec-v2.md): stop only for a change to the public API, contracts or schema; subscribing to an existing event is not a design story; plain commands, no branches; no spec file for a normal story on a direct request (`pr-check` accepts a "Design increment" section instead). Experiment `V21` |
-| [variants/layout-agb](variants/layout-agb/) | AGB: layout A plus [57blocks/agb](https://github.com/57blocks/agb) installed by its own installer at workspace build time (`setup.sh`): `.abrc.json` (brownfield), git hook gates, the built `agb-skills` plugin through `--plugin-dir`, the `ab-knowledge` MCP server. Needs a checkout of agb with `pnpm install` at `$AGB_DIR` or `../agb`. Only `agb check`, `status`, `stack`, `list` are allowed: `agb run` would start its own sessions outside the budget. Experiment `AGB` |
 | [variants/workflow](variants/workflow/) | E2-B: spec and plan templates, skills `story-to-spec` and `implement-plan`, subagent `architecture-reviewer` |
 | [variants/feedback](variants/feedback/) | E3-B: Stop hook that runs `pnpm check` and sends failures back (3 attempts) |
 | [tasks/](tasks/) | T1–T6: `task.json` (prompt), `grader/` (hidden tests, copied in after the run), `rubric.md` |
 | [harness/](harness/) | `run.mjs` (one run), `batch.mjs` (one experiment), `report.mjs` (summary), `experiments.json` (matrix) |
-| [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md`, findings: [E1](results/e1-findings.md), [AGB](results/agb-findings.md) |
+| [results/](results/) | `runs/<run-id>/` evidence per run, `summary.md`, findings: [E1](results/e1-findings.md) |
 
 ## Run
 
@@ -55,7 +54,7 @@ After the [Agent Evaluation Protocol](https://agent-eval.ai/#protocol), a failur
 
 A person can overrule one run with `results/runs/<run-id>/outcome.json`: `{"outcome": "stopped", "reason": "...", "by": "<name>"}`.
 
-`summary.md` reports success as pass / (pass + fail) with a 95% Wilson interval, the old definition as *Result only*, cost per successful task (all spend of the group, failed and stopped runs included, divided by the passes; undefined with no pass), and a grade per experiment: **firm** only with holdout tasks (`"holdout": true` in `experiments.json`) and intervals that do not overlap, otherwise **directional**. The findings files ([E1](results/e1-findings.md), [AGB](results/agb-findings.md)) were written with the old definition of success.
+`summary.md` reports success as pass / (pass + fail) with a 95% Wilson interval, the old definition as *Result only*, cost per successful task (all spend of the group, failed and stopped runs included, divided by the passes; undefined with no pass), and a grade per experiment: **firm** only with holdout tasks (`"holdout": true` in `experiments.json`) and intervals that do not overlap, otherwise **directional**. The findings file ([E1](results/e1-findings.md)) was written with the old definition of success.
 
 The model is pinned in `harness/experiments.json` (`defaults.model`); `--model` overrides it, and `env.json` records what ran. A run with a `result.json` is skipped; use `--force` to run it again. `--gate manual` stops the E2 spec workflow at the gate so that a person can edit and approve the spec.
 

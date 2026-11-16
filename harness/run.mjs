@@ -16,15 +16,14 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
-import { agbWorkflow, requestDoc } from "./agb-flow.mjs";
 import { classify } from "./outcome.mjs";
 
 const LAB = resolve(import.meta.dirname, "..");
 // The model is pinned, so that runs of different days stay comparable: the CLI's default model
-// changed under us once (the AGB runs of 5 November ran on claude-fable-5-1, see results/pilot).
+// changed under us once (a batch of 5 November 2026 ran on claude-fable-5-1 by mistake).
 const DEFAULT_MODEL = JSON.parse(readFileSync(join(LAB, "harness/experiments.json"), "utf8")).defaults?.model;
 const RUN_TIMEOUT_MS = 40 * 60 * 1000;
 
@@ -42,18 +41,11 @@ const { values: args } = parseArgs({
     "no-agent": { type: "boolean", default: false },
     "build-only": { type: "boolean", default: false },
     permissions: { type: "string", default: "scoped" },
-    // AGB workflow: cost cap of one run in USD, enforced by the watchdog.
-    cap: { type: "string", default: "15" },
   },
 });
 
 // A layout with its own story skills (v2) uses them in the spec workflow instead of variants/workflow.
 const OWN_WORKFLOW = existsSync(join(LAB, `variants/layout-${args.layout}`, ".claude/skills/story-start"));
-// A layout may bring its own tooling (layout agb): lab.json with `setup` (a script run after `git init`,
-// before the baseline commit), `pluginDirs` (--plugin-dir), `mcpServers` and extra `allowedTools`.
-// `${ws}`, `${LAB}`, `${AGB_DIR}` and environment variables are filled in.
-const LAB_CFG_FILE = join(LAB, `variants/layout-${args.layout}`, "lab.json");
-const LAB_CFG = existsSync(LAB_CFG_FILE) ? JSON.parse(readFileSync(LAB_CFG_FILE, "utf8")) : {};
 
 const runIdOf = (a) => `${a.task}-${a.layout}-${a.workflow}-${a.feedback}-r${a.repeat}`;
 
@@ -63,23 +55,9 @@ const buildOnly = args["build-only"];
 // --build-only: build the workspace for work on a variant. No agent, no grading, nothing in results/.
 const ws = join(realpathSync(tmpdir()), "agentic-lab", buildOnly ? `build-${runId}` : runId);
 const outDir = buildOnly ? join(ws, ".lab") : join(LAB, "results", "runs", runId);
-const FILL = { AGB_DIR: resolve(LAB, "../agb"), ...process.env, ws, LAB };
-const fill = (v) =>
-  typeof v === "string"
-    ? v.replace(/\$\{(\w+)\}/g, (_, k) => FILL[k] ?? "")
-    : Array.isArray(v)
-      ? v.map(fill)
-      : v && typeof v === "object"
-        ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fill(x)]))
-        : v;
 if (!buildOnly && existsSync(join(outDir, "result.json")) && !args.force) {
   console.log(`skip ${runId}: result exists (use --force)`);
   process.exit(0);
-}
-// The AGB workflow runs every session with an empty CLAUDE_CONFIG_DIR, which has no sign-in.
-if (!buildOnly && args.workflow === "agb" && !process.env.CLAUDE_CODE_OAUTH_TOKEN && !process.env.ANTHROPIC_API_KEY) {
-  console.error("The agb workflow needs CLAUDE_CODE_OAUTH_TOKEN (run `claude setup-token`) or ANTHROPIC_API_KEY.");
-  process.exit(1);
 }
 if (!buildOnly) {
   rmSync(outDir, { recursive: true, force: true });
@@ -117,29 +95,9 @@ function buildWorkspace() {
   // Task setup: files that put the workspace in the start state of one task (for example T5's bug).
   const setup = join(LAB, "tasks", args.task, "setup");
   if (existsSync(setup)) cpSync(setup, ws, { recursive: true });
-  // The lab's own files of a layout are not part of the workspace.
-  for (const f of ["lab.json", LAB_CFG.setup].filter(Boolean)) rmSync(join(ws, f), { force: true });
   const sh = (cmd) => execSync(cmd, { cwd: ws, stdio: "pipe", encoding: "utf8" });
   sh("pnpm install --offline --frozen-lockfile");
-  sh("git init -q -b main");
-  if (LAB_CFG.setup) {
-    const script = join(LAB, `variants/layout-${args.layout}`, LAB_CFG.setup);
-    execFileSync("bash", [script, ws], {
-      cwd: ws,
-      stdio: "pipe",
-      encoding: "utf8",
-      env: { ...process.env, AGB_DIR: FILL.AGB_DIR, LAB_WORKFLOW: args.workflow },
-    });
-  }
-  if (args.workflow === "agb") {
-    // AGB's input is a change request in the repository; it is part of the baseline.
-    const { path, text } = requestDoc(LAB, args.task, task);
-    mkdirSync(join(ws, dirname(path)), { recursive: true });
-    writeFileSync(join(ws, path), text);
-    // AGB's sessions commit, and `asking` writes the git user as the person who answered.
-    sh("git config user.name lab-approver && git config user.email lab@example.test");
-  }
-  sh("git add -A && git -c user.name=lab -c user.email=lab@example.test commit -qm baseline && git tag baseline");
+  sh("git init -q -b main && git add -A && git -c user.name=lab -c user.email=lab@example.test commit -qm baseline && git tag baseline");
 }
 
 // ---------- 2. Agent ----------
@@ -167,7 +125,7 @@ const SCOPED_TOOLS = [
 ];
 function permissionArgs() {
   if (args.permissions === "bypass") return ["--permission-mode", "bypassPermissions"];
-  return ["--permission-mode", "dontAsk", "--allowedTools", ...SCOPED_TOOLS, ...fill(LAB_CFG.allowedTools ?? [])];
+  return ["--permission-mode", "dontAsk", "--allowedTools", ...SCOPED_TOOLS];
 }
 
 // The newest claude CLI on PATH, unless LAB_CLAUDE_BIN names one. An old CLI may not support
@@ -187,9 +145,7 @@ function pickClaude() {
 }
 const CLAUDE_BIN = pickClaude();
 
-// opts (AGB workflow): settingSources, permArgs, budgetUsd, env, onSpawn(child).
-function runClaude(phase, prompt, opts = {}) {
-  const budget = opts.budgetUsd ?? task.budgetUsd ?? 5;
+function runClaude(phase, prompt) {
   const cliArgs = [
     "-p",
     prompt,
@@ -197,29 +153,21 @@ function runClaude(phase, prompt, opts = {}) {
     "stream-json",
     "--verbose",
     "--setting-sources",
-    opts.settingSources ?? "project",
+    "project",
     "--strict-mcp-config",
     "--mcp-config",
-    JSON.stringify({ mcpServers: fill(LAB_CFG.mcpServers ?? {}) }),
-    ...fill(LAB_CFG.pluginDirs ?? []).flatMap((dir) => ["--plugin-dir", dir]),
-    ...(opts.permArgs ?? permissionArgs()),
+    '{"mcpServers":{}}',
+    ...permissionArgs(),
     "--max-budget-usd",
-    String(budget),
+    String(task.budgetUsd ?? 5),
     "--no-session-persistence",
   ];
   const model = args.model ?? DEFAULT_MODEL;
   if (model) cliArgs.push("--model", model);
   const transcript = join(outDir, `transcript-${phase}.jsonl`);
-  log(`phase ${phase}: claude -p (budget $${budget})`);
+  log(`phase ${phase}: claude -p (budget $${task.budgetUsd ?? 5})`);
   return new Promise((done) => {
-    // Own process group, so that a timeout or the AGB cost watchdog stops the whole tree.
-    const child = spawn(CLAUDE_BIN, cliArgs, {
-      cwd: ws,
-      env: opts.env ?? cleanEnv(),
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: true,
-    });
-    opts.onSpawn?.(child);
+    const child = spawn(CLAUDE_BIN, cliArgs, { cwd: ws, env: cleanEnv(), stdio: ["ignore", "pipe", "pipe"] });
     const file = createWriteStream(transcript);
     child.stdout.pipe(file);
     let stderr = "";
@@ -228,21 +176,13 @@ function runClaude(phase, prompt, opts = {}) {
     });
     const timer = setTimeout(() => {
       log(`phase ${phase}: timeout, killing`);
-      killGroup(child);
+      child.kill("SIGTERM");
     }, RUN_TIMEOUT_MS);
     child.on("close", (code) => {
       clearTimeout(timer);
       file.end(() => done({ phase, code, stderr: stderr.slice(-2000), ...parseTranscript(transcript) }));
     });
   });
-}
-
-function killGroup(child) {
-  try {
-    process.kill(-child.pid, "SIGTERM");
-  } catch {
-    child.kill("SIGTERM");
-  }
 }
 
 function parseTranscript(path) {
@@ -422,7 +362,6 @@ if (buildOnly) {
 
 const phases = [];
 let gateInfo = null;
-let agb = null;
 if (args["no-agent"]) {
   log("no agent: grading the untouched workspace");
 } else if (args.workflow === "spec") {
@@ -431,20 +370,6 @@ if (args["no-agent"]) {
   phases.push(await runClaude("spec", `Use the ${specSkill} skill for this story. The story key is ${key}.\n\n${task.prompt}`));
   gateInfo = await gate();
   phases.push(await runClaude("implement", `The spec and the plan in docs/specs/${key}/ are approved. Use the ${implementSkill} skill to implement them.`));
-} else if (args.workflow === "agb") {
-  agb = await agbWorkflow({
-    ws,
-    outDir,
-    log,
-    runClaude,
-    killGroup,
-    cleanEnv,
-    claudeBin: CLAUDE_BIN,
-    task,
-    request: requestDoc(LAB, args.task, task).path,
-    capUsd: Number(args.cap),
-    phases,
-  });
 } else {
   phases.push(await runClaude("main", task.prompt));
 }
@@ -477,16 +402,8 @@ if (broken) {
 }
 
 log("grade");
-// AGB's shell allowance is set-up, not the agent's work (gitignored; it fails the Biome check).
-if (agb) rmSync(join(ws, ".claude/settings.local.json"), { force: true });
 const graded = grade();
-let agbInfo = null;
-if (agb) {
-  // "Docs updated" means project documents; the files AGB adds are counted on their own.
-  graded.docsChanged = graded.docsChanged.filter((f) => !agb.isAgbPath(f));
-  agbInfo = await agb.afterGrade(graded);
-}
-const sum = (k) => phases.filter((p) => p.phase !== "delivery").reduce((n, p) => n + (p[k] ?? 0), 0);
+const sum = (k) => phases.reduce((n, p) => n + (p[k] ?? 0), 0);
 const result = {
   runId,
   task: args.task,
@@ -497,13 +414,11 @@ const result = {
   model: phases[0]?.env.model,
   startedAt: new Date(started).toISOString(),
   wallMs: Date.now() - started,
-  success: graded.checks.all && graded.hardPass && (graded.checks.trace ?? true) && !agbInfo?.overBudget,
+  success: graded.checks.all && graded.hardPass && (graded.checks.trace ?? true),
   ...graded,
   gate: gateInfo,
-  humanInterventions: agbInfo ? agbInfo.humanInterventions : gateInfo ? 1 : 0,
-  // AGB workflow: the stage and answering sessions plus what `agb run` reports; delivery is apart.
-  costUsd: sum("costUsd") + (agbInfo?.cost.agbRun ?? 0),
-  agb: agbInfo,
+  humanInterventions: gateInfo ? 1 : 0,
+  costUsd: sum("costUsd"),
   agentMs: sum("durationMs"),
   turns: sum("turns"),
   phases: phases.map(({ env, ...rest }) => rest),
